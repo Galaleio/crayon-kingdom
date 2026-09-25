@@ -49,17 +49,18 @@
   }
   .hudbtn.off { opacity: .5; text-decoration: line-through; }
   #touch { position: absolute; inset: auto 0 0 0; height: 40%; pointer-events: none; z-index: 4; }
+  .tpad button { font-size: max(calc(var(--u) * 3), 18px) !important; }
   .tpad { position: absolute; bottom: calc(var(--u) * 1.5); display: flex; gap: calc(var(--u) * 1.2); align-items: flex-end; pointer-events: none; }
   .tpad.l { left: calc(var(--u) * 1.5); }
   .tpad.r { right: calc(var(--u) * 1.5); }
   .tpad button {
     pointer-events: auto; touch-action: none;
-    width: calc(var(--u) * 9); height: calc(var(--u) * 9); border-radius: 50%;
-    border: calc(var(--u) * .4) solid rgba(34,29,56,.85); background: rgba(255,250,240,.55);
+    width: max(calc(var(--u) * 9), 52px); height: max(calc(var(--u) * 9), 52px); border-radius: 50%;
+    border: max(calc(var(--u) * .4), 3px) solid rgba(34,29,56,.85); background: rgba(255,250,240,.55);
     font: 400 calc(var(--u) * 3) "Lilita One", sans-serif; color: var(--ink); padding: 0;
   }
-  .tpad button.sm { width: calc(var(--u) * 6.5); height: calc(var(--u) * 6.5); font-size: calc(var(--u) * 2.2); }
-  .tpad button.lg { width: calc(var(--u) * 11); height: calc(var(--u) * 11); background: rgba(255,210,63,.7); font-size: calc(var(--u) * 2.4); }
+  .tpad button.sm { width: max(calc(var(--u) * 6.5), 44px); height: max(calc(var(--u) * 6.5), 44px); font-size: calc(var(--u) * 2.2); }
+  .tpad button.lg { width: max(calc(var(--u) * 11), 64px); height: max(calc(var(--u) * 11), 64px); background: rgba(255,210,63,.7); font-size: calc(var(--u) * 2.4); }
   .tpad button.on { background: rgba(255,210,63,.95); transform: scale(.94); }
 
   /* screens */
