@@ -82,6 +82,7 @@
   <h2 id="optsTitle">Options</h2>
   <div class="opt"><label for="oLang">Language<small>Words, menus and voice</small></label><select id="oLang"><option value="en">English</option><option value="fr">Français</option></select></div>
   <div class="opt"><label for="oSpeak">Read aloud<small>Speaks the goal and each find</small></label><input type="checkbox" id="oSpeak"></div>
+  <div class="opt"><label for="oVoice">Voice<small>Recorded voices sound the most natural</small></label><select id="oVoice"></select></div>
   <div class="opt"><label for="oGlide">Glide to the next turn<small>One press walks until the path splits</small></label><input type="checkbox" id="oGlide"></div>
   <div class="opt"><label for="oBig">Big buttons<small>Larger direction pad</small></label><input type="checkbox" id="oBig"></div>
   <div class="opt"><label for="oDys">Easy-read letters<small>Clearer letter shapes and spacing</small></label><input type="checkbox" id="oDys"></div>
@@ -99,13 +100,13 @@
   const GAME = {"artist": "Zoey", "lang": "en", "heroes": ["princess2", "elf2", "fairy", "cat", "rabbit", "rainbowpig"], "characters": [{"k": "princess2", "en": "Princess Poppy", "fr": "Princesse Poppy"}, {"k": "elf2", "en": "Pip", "fr": "Pip"}, {"k": "fairy", "en": "Nanny Plumdrop", "fr": "Mamie Prunelle"}, {"k": "cat", "en": "Clementine", "fr": "Clémentine"}, {"k": "rabbit", "en": "Rosie Rabbit", "fr": "Rosie Lapin"}, {"k": "rainbowpig", "en": "Rainbow Snout", "fr": "Museau Arc-en-ciel"}, {"k": "gaston", "en": "Gaston", "fr": "Gaston"}, {"k": "king", "en": "King Thistlebeard", "fr": "Roi Barbe-Chardon"}, {"k": "wizard", "en": "Old Elf Oakley", "fr": "Vieux lutin Oakley"}, {"k": "flyer", "en": "Twinkle", "fr": "Scintille"}, {"k": "piggy", "en": "Penny Pig", "fr": "Penny Cochon"}, {"k": "puppy", "en": "Biscuit", "fr": "Biscuit"}, {"k": "owl", "en": "Professor Specs", "fr": "Professeure Lunettes"}, {"k": "chick", "en": "Sunny", "fr": "Soleil"}, {"k": "wolf", "en": "Wolfgang", "fr": "Wolfgang"}, {"k": "lamb", "en": "Lulu Lamb", "fr": "Lulu Agneau"}, {"k": "ladybug", "en": "Dot", "fr": "Pois"}]};
   const $ = s => document.querySelector(s);
   const T = {
-    en: { title: 'Calm Maze', maze: 'Maze', music: 'Music', options: 'Options', goal: (h, f) => `Help ${h} find ${f}!`, found: f => `You found ${f}!`, crayon: 'A crayon!',
+    en: { title: 'Calm Maze', maze: 'Maze', music: 'Music', options: 'Options', goal: (h, f) => `Help ${h} find ${f}!`, findSay: f => `Let's find ${f}!`, found: f => `You found ${f}!`, crayon: 'A crayon!',
       next: 'Next maze', again: 'Same size again', credit: a => `Characters drawn by hand by ${a}`, scanHint: 'Press any key or tap anywhere to move the glowing way.' },
-    fr: { title: 'Labyrinthe calme', maze: 'Labyrinthe', music: 'Musique', options: 'Options', goal: (h, f) => `Aide ${h} à trouver ${f}!`, found: f => `Tu as trouvé ${f}!`, crayon: 'Un crayon!',
+    fr: { title: 'Labyrinthe calme', maze: 'Labyrinthe', music: 'Musique', options: 'Options', goal: (h, f) => `Aide ${h} à trouver ${f}!`, findSay: f => `Trouvons ${f}!`, found: f => `Tu as trouvé ${f}!`, crayon: 'Un crayon!',
       next: 'Labyrinthe suivant', again: 'Encore la même taille', credit: a => `Personnages dessinés à la main par ${a}`, scanHint: 'Appuie sur une touche ou touche l’écran pour avancer vers la flèche qui brille.' },
   };
   const SIZES = [4, 5, 6, 7, 9, 11];
-  const DEF = { lang: GAME.lang || 'en', speak: true, glide: true, big: false, dys: false, hintPath: false, scan: false, scanSpeed: 1500, music: false, level: 0, hero: GAME.heroes[0] };
+  const DEF = { lang: GAME.lang || 'en', speak: true, glide: true, big: false, dys: false, hintPath: false, scan: false, scanSpeed: 1500, music: false, level: 0, hero: GAME.heroes[0], voiceEn: 'heart', voiceFr: 'siwis' };
   let O = Object.assign({}, DEF);
   try { Object.assign(O, JSON.parse(localStorage.getItem('kapact.maze') || '{}')); } catch (e) { /* storage unavailable */ }
   O.music = false;
@@ -114,6 +115,25 @@
   const byKey = k => GAME.characters.find(c => c.k === k) || GAME.characters[0];
   const nameOf = c => (O.lang === 'fr' && c.fr) || c.en;
   const IMG = {}; for (const [k, src] of Object.entries(SPR)) { const i = new Image(); i.src = src; IMG[k] = i; }
+
+
+  // ---- recorded voices (Voicebox). Clip file name is derived from the spoken text. ----
+  const VOICES = { heart: ['Heart (female)', 'en'], bella: ['Bella (female)', 'en'], michael: ['Michael (male)', 'en'], puck: ['Puck (male)', 'en'], siwis: ['Siwis (voix féminine)', 'fr'] };
+  function clipKey(text) {
+    const t = text.trim().normalize('NFC'); let h = 5381;
+    for (const ch of t) h = ((Math.imul(h, 33) ^ ch.codePointAt(0)) >>> 0);
+    let slug = t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
+    return slug + '-' + h.toString(16).padStart(8, '0');
+  }
+  let clipAudio = null;
+  function playClip(text, voice, fallback) {
+    try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) { /* ignore */ }
+    if (clipAudio) { clipAudio.pause(); clipAudio = null; }
+    if (!voice || voice === 'browser' || !VOICES[voice]) { fallback(text); return; }
+    const a = new Audio('voices/' + voice + '/' + clipKey(text) + '.mp3'); clipAudio = a; let fell = false;
+    const fb = () => { if (!fell && clipAudio === a) { fell = true; fallback(text); } };
+    a.onerror = fb; const p = a.play(); if (p && p.catch) p.catch(fb);
+  }
 
   // ---- gentle audio ----
   let ac = null, musicTimer = null;
@@ -126,8 +146,8 @@
   function musicOn() { musicOff(); let i = 0; musicTimer = setInterval(() => { const f = PENTA[[0, 2, 4, 5, 4, 2, 3, 1][i++ % 8]]; tone(f, 1.6, .04); if (i % 4 === 1) tone(f / 2, 2.4, .035); }, 900); }
   function musicOff() { clearInterval(musicTimer); musicTimer = null; }
   function say(text) {
-    if (!O.speak || !('speechSynthesis' in window)) return;
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = O.lang === 'fr' ? 'fr-CA' : 'en-US'; u.rate = .85; speechSynthesis.speak(u); } catch (e) { /* ignore */ }
+    if (!O.speak) return;
+    playClip(text, O.lang === 'fr' ? O.voiceFr : O.voiceEn, t => { try { const u = new SpeechSynthesisUtterance(t); u.lang = O.lang === 'fr' ? 'fr-CA' : 'en-US'; u.rate = .85; speechSynthesis.speak(u); } catch (e) { /* ignore */ } });
   }
 
   // ---- maze ----
@@ -161,7 +181,7 @@
     const dead = []; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (openDirs({ x, y }).length === 1 && !(x === 0 && y === 0) && !(x === goal.x && y === goal.y)) dead.push({ x, y });
     crayons = dead.sort(() => Math.random() - .5).slice(0, Math.max(1, Math.floor(N / 2))).map((p, i) => ({ ...p, col: ['#e63946', '#ffd23f', '#3fae49', '#2f6fd1', '#7a4bd6'][i % 5], got: false }));
     wallCanvas = null; $('#win').hidden = true; $('#play').hidden = false;
-    applyText(); const g = L().goal(nameOf(byKey(O.hero)), nameOf(friend)); msg(g); say(g); updatePad(); startScan(); fit();
+    applyText(); const g = L().goal(nameOf(byKey(O.hero)), nameOf(friend)); msg(g); say(L().findSay(nameOf(friend))); updatePad(); startScan(); fit();
   }
   function fit() { const r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); wallCanvas = null; }
   addEventListener('resize', fit);
@@ -261,7 +281,14 @@
     document.body.classList.toggle('big', O.big); document.body.classList.toggle('dys', O.dys); $('#padHero').src = SPR[O.hero];
   }
   $('#oHero').innerHTML = GAME.heroes.map(k => `<option value="${k}">${byKey(k).en}</option>`).join('');
-  $('#bOpts').onclick = () => { $('#oLang').value = O.lang; $('#oScanSpeed').value = String(O.scanSpeed); $('#oHero').value = O.hero; for (const [id, k] of Object.entries(map)) $('#' + id).checked = !!O[k]; stopScan(); $('#opts').showModal(); };
+  function fillVoices() {
+    const lang = $('#oLang').value, cur = lang === 'fr' ? O.voiceFr : O.voiceEn;
+    $('#oVoice').innerHTML = Object.entries(VOICES).filter(([, v]) => v[1] === lang).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('') + `<option value="browser">${lang === 'fr' ? 'Voix de l\u2019ordinateur' : 'Computer voice'}</option>`;
+    $('#oVoice').value = cur;
+  }
+  $('#oLang').addEventListener('change', fillVoices);
+  $('#oVoice').addEventListener('change', () => { const v = $('#oVoice').value; if ($('#oLang').value === 'fr') O.voiceFr = v; else O.voiceEn = v; const was = O.speak, wl = O.lang; O.speak = true; O.lang = $('#oLang').value; say(L().found(nameOf(friend))); O.speak = was; O.lang = wl; });
+  $('#bOpts').onclick = () => { fillVoices(); $('#oLang').value = O.lang; $('#oScanSpeed').value = String(O.scanSpeed); $('#oHero').value = O.hero; for (const [id, k] of Object.entries(map)) $('#' + id).checked = !!O[k]; stopScan(); $('#opts').showModal(); };
   $('#oDone').onclick = () => $('#opts').close();
   $('#opts').addEventListener('close', () => {
     O.lang = $('#oLang').value; O.scanSpeed = +$('#oScanSpeed').value; O.hero = $('#oHero').value;

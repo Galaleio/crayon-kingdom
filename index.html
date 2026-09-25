@@ -254,7 +254,7 @@ let usedTouch = false;
 const SAVE_KEY = 'crayonKingdom.v1';
 const defSave = () => ({ name: '', mode: 'easy', hero: 'princess2', heroPicked: false, unlocked: 0, levels: {},
   totals: { crayons: 0, stomps: 0, bridges: 0, zaps: 0, words: 0 }, wordsDone: [], rides: {}, stickers: {}, heroesCleared: {}, friends: {}, flags: {},
-  music: true, sfx: true, touch: 'auto', song: 'world' });
+  music: true, sfx: true, touch: 'auto', song: 'world', voice: 'heart', readAloud: true });
 let save = defSave();
 try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s) { save = Object.assign(defSave(), s); save.totals = Object.assign(defSave().totals, s.totals); save.flags = s.flags || {}; } } catch (e) { /* storage unavailable: play without saving */ }
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* ignore */ } }
@@ -1276,7 +1276,7 @@ function enemyHit(e) {
 
 function levelClear() {
   if (L.done) return;
-  L.done = true; L.doneT = 2.6; SND.play('clear'); confetti(L.p.x + 15, L.p.y, 60);
+  L.done = true; L.doneT = 2.6; SND.play('clear'); sayLine(L.boss ? 'You saved the Crayon Kingdom!' : 'Level clear!'); confetti(L.p.x + 15, L.p.y, 60);
   if (drawing) endDraw();
 }
 function finishLevel() {
@@ -1295,6 +1295,25 @@ function finishLevel() {
   const r = { idx: i, name: L.def.name, got: L.got, total: L.total, pct, stars: L.stars, friends: L.friends.slice(), friendTotal: L.friendTotal, time: L.time, words: L.words, hurt: L.hurt, snout: i === 2 && !wasDone, newOnes, boss: !!L.def.boss };
   mode = 'menu'; L = null; updateChrome();
   if (r.boss) showEnding(r); else showResults(r);
+}
+
+
+// ---- recorded voices (Voicebox). Clip file name is derived from the spoken text. ----
+const VOICES = { heart: ['Heart (female)', 'en'], bella: ['Bella (female)', 'en'], michael: ['Michael (male)', 'en'], puck: ['Puck (male)', 'en'], siwis: ['Siwis (voix féminine)', 'fr'] };
+function clipKey(text) {
+  const t = text.trim().normalize('NFC'); let h = 5381;
+  for (const ch of t) h = ((Math.imul(h, 33) ^ ch.codePointAt(0)) >>> 0);
+  let slug = t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
+  return slug + '-' + h.toString(16).padStart(8, '0');
+}
+let clipAudio = null;
+function playClip(text, voice, fallback) {
+  try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) { /* ignore */ }
+  if (clipAudio) { clipAudio.pause(); clipAudio = null; }
+  if (!voice || voice === 'browser' || !VOICES[voice]) { fallback(text); return; }
+  const a = new Audio('voices/' + voice + '/' + clipKey(text) + '.mp3'); clipAudio = a; let fell = false;
+  const fb = () => { if (!fell && clipAudio === a) { fell = true; fallback(text); } };
+  a.onerror = fb; const p = a.play(); if (p && p.catch) p.catch(fb);
 }
 
 // ================= word puzzle =================
@@ -1316,7 +1335,7 @@ function openWord() {
   PZ = { word, spr, slots: word.split('').map(() => null), tiles: mix.map((ch, id) => ({ id, ch, slot: null, lock: false })), tries: 0, done: false };
   if (drawing) endDraw();
   for (const k of ['left', 'right', 'down', 'jumpHeld', 'actHeld']) inp[k] = false;
-  mode = 'puzzle'; SND.sfx('pop');
+  mode = 'puzzle'; SND.sfx('pop'); sayLine('Spell the word!');
   const canSpeak = 'speechSynthesis' in window;
   show(`<div class="pz">
       <div class="pz-pic"><img src="${SPR[spr]}" alt="Picture clue">${canSpeak ? '<button class="b" id="pzHear">Hear it</button>' : ''}</div>
@@ -1335,7 +1354,21 @@ function openWord() {
   $('#pzHint').addEventListener('click', () => { SND.sfx('click'); hintPZ(); });
   renderPZ();
 }
-function speak(w) { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(w.toLowerCase()); u.rate = .8; speechSynthesis.speak(u); } catch (e) { /* speech not available */ } }
+function speak(w) { playClip(w.toLowerCase(), save.voice, t => { try { const u = new SpeechSynthesisUtterance(t); u.rate = .8; speechSynthesis.speak(u); } catch (e) { /* speech not available */ } }); }
+function sayLine(text) { if (!save.readAloud) return; playClip(text, save.voice, t => { try { const u = new SpeechSynthesisUtterance(t); u.rate = .92; speechSynthesis.speak(u); } catch (e) { /* ignore */ } }); }
+const SPOKEN_SIGNS = {
+  move: { k: 'Use the arrow keys to run. Press space to jump!', t: 'Hold the arrow buttons to run. Tap jump to jump!' },
+  blocks: 'Jump and bonk the question blocks from below. Some hide a Super Strawberry!',
+  stomp: 'Jump on scribbles to turn them back into colour!',
+  draw: { k: 'Too far to jump? Click and drag to draw a crayon bridge! Drawing uses crayons.', t: 'Too far to jump? Drag your finger to draw a crayon bridge! Drawing uses crayons.' },
+  boo: 'Boo-Berry only sneaks up when you look away. Turn and face him and he freezes!',
+  cloud: 'Rainbow clouds move. Hop on and ride them across!',
+  word: 'See the A B C block? Bonk it from below for a spelling puzzle. Spell the word to win crayons!',
+};
+const SPOKEN_NPC = ['Welcome, hero! The Scribble Squad has trapped our friends in ink bubbles. Head right to rescue them!',
+  "Oh dear, hero! Gaston the giant ladybird sat down by the Ink Lake and won't budge. Find strawberries and bring them to him!",
+  'The Rainbow Swirl, hero! Ride the rainbow clouds over the gaps. They say a rainbow pig lives at the end of this world.',
+  'This is the Friends Parade route, hero. Wolfgang is trapped at the very end. Be brave!'];
 function tileHTML(t) { return `<button class="tile ${t.lock ? 'lock' : ''}" data-tile="${t.id}" aria-label="Letter ${t.ch}">${t.ch}<small>${LETTER_PTS[t.ch] || 1}</small></button>`; }
 function renderPZ(bad) {
   if (!PZ) return;
@@ -1420,7 +1453,7 @@ function winPZ() {
   const pts = PZ.word.split('').reduce((a, ch) => a + (LETTER_PTS[ch] || 1), 0), prize = PZ.word.length + 2;
   L.ammo += prize; L.words++; save.totals.words = (save.totals.words || 0) + 1; save.totals.crayons += prize;
   save.wordsDone = (save.wordsDone || []).concat(PZ.word); persist();
-  SND.sfx('star'); setTimeout(() => speak(PZ ? PZ.word : ''), 350);
+  SND.sfx('star'); const wWord = PZ.word; setTimeout(() => { speak(wWord); setTimeout(() => sayLine('Great spelling!'), 1100); }, 350);
   scr.querySelector('.pz').classList.add('win');
   $('#pzMsg').textContent = `You spelled ${PZ.word}! That's ${pts} points and ${prize} crayons!`;
   $('#pzBtns').innerHTML = '<button class="b primary" id="pzGo" data-primary>Keep playing</button>';
@@ -1641,7 +1674,7 @@ function drawEnt(e) {
       drawSpr('gaston', e.x + e.w / 2, e.y + e.h + 10 - bob, 176, e.fed, walking ? Math.sin(e.walk * 8) * .04 : 0);
       const near = Math.abs(P.x - (e.x + e.w / 2)) < 330;
       if (near && !e.fed) bubble(L.berries >= L.need ? 'Are those strawberries? Walk up and give them to me!' : 'I am SO hungry... Bring me ' + L.need + ' strawberries and I will carry you across the Ink Lake! (You have ' + L.berries + ')', e.x + e.w / 2, e.y - 6);
-      else if (near && e.fed && P.onEnt !== e && e.x < e.stopX) bubble('Yum! Hop on my back and I will walk you across!', e.x + e.w / 2, e.y - 6);
+      else if (near && e.fed && P.onEnt !== e && e.x < e.stopX) { bubble('Yum! Hop on my back and I will walk you across!', e.x + e.w / 2, e.y - 6); if (!e.saidYum) { e.saidYum = true; sayLine('Yum! Hop on my back and I will walk you across!'); } }
       break;
     }
     case 'boss': {
@@ -1767,8 +1800,8 @@ function drawLevel() {
   if (L.tw) drawSpr('flyer', L.tw.x, L.tw.y + 30, 40, P.facing < 0, Math.sin(gt * 8) * .15);
   drawParts();
   for (const e of L.ents) {
-    if (e.type === 'npc' && Math.abs(P.x - e.x) < 230) bubble(e.text.replace('%N', save.name || 'hero'), e.x + 24, e.y);
-    if (e.type === 'sign' && Math.abs(P.x - e.x) < 150) { const s = SIGNS[e.key]; bubble(touchMode() ? s.t : s.k, e.x + 22, e.y); }
+    if (e.type === 'npc' && Math.abs(P.x - e.x) < 230) { bubble(e.text.replace('%N', save.name || 'hero'), e.x + 24, e.y); if (!e.said) { e.said = true; if (SPOKEN_NPC[L.idx]) sayLine(SPOKEN_NPC[L.idx]); } }
+    if (e.type === 'sign' && Math.abs(P.x - e.x) < 150) { const s = SIGNS[e.key]; bubble(touchMode() ? s.t : s.k, e.x + 22, e.y); if (!e.said) { e.said = true; const sp = SPOKEN_SIGNS[e.key]; if (sp) sayLine(typeof sp === 'string' ? sp : touchMode() ? sp.t : sp.k); } }
   }
   ctx.restore();
   drawHUD();
@@ -1827,6 +1860,7 @@ function renderPause() {
       <b>Drop through</b><span>${touchMode() ? 'down button' : 'Down or S'} while standing on a plank or cloud</span>
     </div>
     <div class="toggle"><span>Music</span><button class="b" data-go="tMusic">${save.music ? 'On' : 'Off'}</button></div>
+    <div class="toggle"><span>Voice</span><button class="b" data-go="tVoice">${esc(voiceLabel())}</button></div>
     <div class="toggle"><span>Song</span><button class="b" data-go="juke" data-arg="pause">${esc(songLabel())} &#9835;</button></div>
     <div class="toggle"><span>Sound effects</span><button class="b" data-go="tSfx">${save.sfx ? 'On' : 'Off'}</button></div>
     <div class="btns"><button class="b" data-go="quit">Kingdom map</button><button class="b" data-go="restart">Restart level</button><button class="b primary" data-primary data-go="resume">Keep playing</button></div>`);
@@ -1897,6 +1931,8 @@ function showSettings() {
   show(`<h2>Settings</h2>
     <div class="toggle"><span>Game mode</span><button class="b" data-go="tMode">${save.mode === 'hard' ? 'Challenge (3 hearts)' : 'Relaxed (unlimited tries)'}</button></div>
     <div class="toggle"><span>Music</span><button class="b" data-go="tMusic">${save.music ? 'On' : 'Off'}</button></div>
+    <div class="toggle"><span>Voice</span><button class="b" data-go="tVoice">${esc(voiceLabel())}</button></div>
+    <div class="toggle"><span>Read signs aloud</span><button class="b" data-go="tRead">${save.readAloud ? 'On' : 'Off'}</button></div>
     <div class="toggle"><span>Song</span><button class="b" data-go="juke" data-arg="settings">${esc(songLabel())} &#9835;</button></div>
     <div class="toggle"><span>Sound effects</span><button class="b" data-go="tSfx">${save.sfx ? 'On' : 'Off'}</button></div>
     <div class="toggle"><span>Touch buttons</span><button class="b" data-go="tTouch">${{ auto: 'Automatic', on: 'Always show', off: 'Hide' }[save.touch]}</button></div>
@@ -1904,6 +1940,7 @@ function showSettings() {
     <p class="hand" style="color:#5d5677">Progress saves in this browser on this device.</p>
     <div class="btns"><button class="b primary" data-primary data-go="map">Done</button></div>`);
 }
+function voiceLabel() { return save.voice === 'browser' ? 'Computer voice' : (VOICES[save.voice] || ['Computer voice'])[0]; }
 function songLabel() { return save.song === 'shuffle' ? 'Shuffle' : save.song && SONGS[save.song] ? SONGS[save.song].name : 'World music'; }
 let jukeFrom = 'map';
 function showJukebox(from) {
@@ -1949,6 +1986,8 @@ const GO = {
   pickHero: b => { const k = b.dataset.arg; if (!heroUnlocked(k)) { SND.sfx('out'); return; } save.hero = k; save.heroPicked = true; persist(); scr.querySelectorAll('.hero').forEach(x => x.classList.toggle('sel', x.dataset.arg === k)); },
   resume, restart: () => { if (L) startLevel(L.idx); },
   juke: b => showJukebox(b.dataset.arg),
+  tVoice: b => { const order = ['heart', 'bella', 'michael', 'puck', 'browser']; save.voice = order[(order.indexOf(save.voice) + 1) % order.length]; persist(); b.textContent = voiceLabel(); const was = save.readAloud; save.readAloud = true; sayLine('Princess Poppy'); save.readAloud = was; },
+  tRead: b => { save.readAloud = !save.readAloud; persist(); b.textContent = save.readAloud ? 'On' : 'Off'; },
   pickSong: b => {
     save.song = b.dataset.arg; if (!save.music) { save.music = true; SND.apply(); updateChrome(); } persist();
     const id = save.song === 'world' ? (L ? L.def.song : 'meadow') : save.song === 'shuffle' ? JUKEBOX[Math.floor(Math.random() * JUKEBOX.length)] : save.song;
