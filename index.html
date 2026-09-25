@@ -306,7 +306,7 @@ const LETTER_PTS = { A: 1, B: 3, C: 3, D: 2, E: 1, F: 4, G: 2, H: 4, I: 1, J: 8,
 const VEH = {
   car: { name: 'Crayon Car', hint: 'Zoom! Jump with %J. Press %P to hop out.', time: 20 },
   plane: { name: 'Doodle Plane', hint: 'Fly! Hold %J to climb, %D to dive. %P to hop out.', time: 15 },
-  rocket: { name: 'Rocket', hint: 'BLAST OFF! Steer with %J and %D.', time: 3.5 },
+  rocket: { name: 'Rocket', hint: 'BLAST OFF! Steer with %J and %D. %P to hop out.', time: 5 },
   jetpack: { name: 'Jetpack', hint: 'Hold %J to fly!', time: 6 },
 };
 const stickerCount = () => Object.keys(save.stickers).length;
@@ -1088,7 +1088,7 @@ function rideVehicle(dt, dir) {
     P.vy = toward(P.vy, inp.jumpHeld ? -300 : inp.down ? 320 : 50, 1100);
     P.engT -= dt; if (P.engT <= 0) { P.engT = .12; SND.sfx('engine'); }
   } else if (V.kind === 'rocket') {
-    P.vx = P.facing * 640; P.vy = toward(P.vy, inp.jumpHeld ? -330 : inp.down ? 330 : 0, 1800);
+    P.vx = P.facing * 400; P.vy = toward(P.vy, inp.jumpHeld ? -230 : inp.down ? 230 : 0, 1000);
     dashBreak(); flame(P.x + P.w / 2 - P.facing * 46, P.y + P.h / 2 + 6, -P.facing, 0);
     P.engT -= dt; if (P.engT <= 0) { P.engT = .1; SND.sfx('whoosh'); }
   }
