@@ -32,7 +32,7 @@
   #rot { display: none; color: #fff; font-family: "Gaegu", cursive; font-size: 20px; margin: 0 0 8px; text-align: center; }
   @media (orientation: portrait) and (pointer: coarse) { #rot { display: block; } }
   #stage {
-    position: relative; width: 960px; height: 540px; flex: none;
+    position: relative; width: 960px; height: 540px; flex: none; max-width: 100%;
     border-radius: calc(var(--u) * 1.2); overflow: hidden;
     box-shadow: 0 0 0 calc(var(--u) * .45) var(--ink), 0 calc(var(--u) * 1.2) 0 calc(var(--u) * .45) rgba(0,0,0,.35);
     background: #8fd0ff; touch-action: none; user-select: none; -webkit-user-select: none;
@@ -95,7 +95,7 @@
   .logo .a { color: var(--sky); } .logo .b1 { color: var(--berry); } .logo .c { color: var(--grass); } .logo .d { color: var(--orange); } .logo .e { color: var(--plum); }
   .title-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: calc(var(--u) * 2); align-items: center; }
   .credit { display: inline-block; font-family: "Gaegu", cursive; font-size: calc(var(--u) * 2.1); background: var(--sun); padding: 0 calc(var(--u) * 1.4); border-radius: 999px; transform: rotate(-1.5deg); }
-  .parade { position: relative; height: calc(var(--u) * 20); }
+  .parade { position: relative; height: calc(var(--u) * 20); pointer-events: none; }
   .parade img { position: absolute; bottom: 0; animation: bob 2.4s ease-in-out infinite; filter: drop-shadow(0 4px 0 rgba(34,29,56,.15)); }
   label.fl { font: 400 calc(var(--u) * 2) "Lilita One", sans-serif; }
   input.name {
@@ -1491,13 +1491,14 @@ function toast(kind, text, spr) {
 // ================= rendering =================
 function fitStage() {
   const rot = $('#rot'); const extra = rot.offsetHeight ? rot.offsetHeight + 8 : 0;
-  const aw = innerWidth - 32, ah = innerHeight - 24 - extra;
+  const vw = document.documentElement.clientWidth || innerWidth, vh = (window.visualViewport && visualViewport.height) || document.documentElement.clientHeight || innerHeight;
+  const aw = vw - 32, ah = vh - 24 - extra;
   const w = Math.max(280, Math.min(aw, ah * 16 / 9)), h = w * 9 / 16;
   stage.style.width = w + 'px'; stage.style.height = h + 'px'; stage.style.setProperty('--u', (w / 100) + 'px');
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
 }
-addEventListener('resize', fitStage);
+addEventListener('resize', fitStage); addEventListener('orientationchange', () => setTimeout(fitStage, 250)); if (window.visualViewport) visualViewport.addEventListener('resize', fitStage);
 
 function drawSpr(key, cx, bottom, h, flip = false, rot = 0, sx = 1, sy = 1, alpha = 1) {
   const im = IMG[key]; if (!im || !im.naturalWidth) return;
