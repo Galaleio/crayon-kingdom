@@ -254,7 +254,7 @@ let usedTouch = false;
 const SAVE_KEY = 'crayonKingdom.v1';
 const defSave = () => ({ name: '', mode: 'easy', hero: 'princess2', heroPicked: false, unlocked: 0, levels: {},
   totals: { crayons: 0, stomps: 0, bridges: 0, zaps: 0, words: 0 }, wordsDone: [], rides: {}, stickers: {}, heroesCleared: {}, friends: {}, flags: {},
-  music: true, sfx: true, touch: 'auto' });
+  music: true, sfx: true, touch: 'auto', song: 'world' });
 let save = defSave();
 try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s) { save = Object.assign(defSave(), s); save.totals = Object.assign(defSave().totals, s.totals); save.flags = s.flags || {}; } } catch (e) { /* storage unavailable: play without saving */ }
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* ignore */ } }
@@ -344,9 +344,20 @@ const SONGS = {
     lead: 'e5/2 e5/2 r/2 e5/2 g5/2 f#5/2 e5/2 d#5/2 e5/2 b4/2 r/2 b4/2 c5/2 b4/2 a4/2 b4/2 e5/2 e5/2 r/2 e5/2 a5/2 g5/2 f#5/2 e5/2 d#5/4 f#5/4 b5/4 r/4',
     bass: 'e2/2 e3/2 e2/2 e3/2 e2/2 e3/2 e2/2 e3/2 e2/2 e3/2 e2/2 e3/2 e2/2 e3/2 e2/2 e3/2 a2/2 a3/2 a2/2 a3/2 a2/2 a3/2 a2/2 a3/2 b2/2 b3/2 b2/2 b3/2 b2/2 b3/2 b2/2 b3/2',
     drums: 'k-hkk-h-k-hks-hs' },
+  j1: { name: 'Crayon Rush', bpm: 168, lv: .055, chords: 'c3 c3 f2 g2 a2 f2 g2 c3', drums: 'k-h-s-hkk-h-s-hs', lead: 'c5/2 e5/2 g5/2 c6/2 g5/2 e5/2 g5/4 a5/2 g5/2 e5/2 c5/2 d5/4 e5/4 f5/2 a5/2 c6/2 a5/2 f5/2 a5/2 c6/4 b5/2 a5/2 g5/2 f5/2 e5/4 d5/4 a5/2 c6/2 e6/2 c6/2 a5/2 e5/2 a5/4 f5/2 a5/2 c6/2 f6/2 e6/4 c6/4 d6/2 c6/2 b5/2 a5/2 g5/2 f5/2 e5/2 d5/2 c5/4 g4/4 c5/8' },
+  j2: { name: 'Rocket Pop', bpm: 172, lv: .055, chords: 'g2 g2 e2 c3 g2 d3 c3 d3', drums: 'k-hsk-hsk-hskshs', lead: 'g5/2 g5/2 d5/2 g5/2 b5/4 a5/2 g5/2 g5/2 g5/2 d5/2 g5/2 b5/4 d6/4 e6/2 d6/2 b5/2 g5/2 e5/4 g5/4 c6/2 b5/2 a5/2 g5/2 a5/8 b5/2 b5/2 a5/2 g5/2 b5/4 d6/4 d6/2 c6/2 b5/2 a5/2 f#5/4 d5/4 e5/2 g5/2 c6/2 e6/2 d6/2 c6/2 b5/2 a5/2 a5/4 f#5/4 g5/8' },
+  j3: { name: 'Jelly Jump', bpm: 160, lv: .055, chords: 'f2 f2 bb2 c3 f2 d3 bb2 c3', drums: 'k--hs-k-k-hhs-hh', lead: 'f5/3 a5/1 c6/2 a5/2 f5/4 c5/4 f5/3 a5/1 c6/2 a5/2 g5/8 bb5/3 a5/1 g5/2 f5/2 d5/4 f5/4 g5/2 a5/2 bb5/2 a5/2 g5/4 c5/4 f5/3 a5/1 c6/2 f6/2 e6/2 d6/2 c6/4 d6/3 c6/1 a5/2 f5/2 d5/8 bb5/2 a5/2 g5/2 f5/2 e5/2 f5/2 g5/4 f5/4 c5/4 f5/8' },
+  j4: { name: 'Ladybug Boogie', bpm: 150, lv: .055, chords: 'a2 a2 d3 e2 a2 a2 d3 e2', drums: 'k-h-s-h-k-hkskhs', lead: 'a4/2 c5/2 e5/2 a5/2 g5/2 e5/2 d5/2 c5/2 d5/2 e5/2 c5/2 a4/2 r/4 e5/4 d5/2 f5/2 a5/2 d6/2 c6/2 a5/2 f5/2 d5/2 e5/2 g#5/2 b5/2 e6/2 d6/4 b5/4 a4/2 c5/2 e5/2 a5/2 g5/2 e5/2 d5/2 c5/2 d5/2 e5/2 c5/2 a4/2 e5/2 g5/2 a5/4 d5/2 f5/2 a5/2 d6/2 c6/2 a5/2 f5/2 d5/2 e5/4 g#5/4 a5/8' },
+  j5: { name: 'Turbo Toast', bpm: 176, lv: .055, chords: 'd3 d3 g2 a2 b2 g2 a2 d3', drums: 'k-hsk-hskkhsk-hs', lead: 'd5/2 f#5/2 a5/2 d6/2 a5/2 f#5/2 a5/4 d6/2 c#6/2 b5/2 a5/2 f#5/4 a5/4 b5/2 a5/2 g5/2 b5/2 d6/4 b5/4 a5/2 b5/2 c#6/2 d6/2 e6/8 f#6/2 e6/2 d6/2 b5/2 f#5/4 b5/4 g5/2 b5/2 d6/2 g6/2 f#6/4 e6/4 e6/2 d6/2 c#6/2 b5/2 a5/2 g5/2 f#5/2 e5/2 d5/4 a4/4 d5/8' },
+  j6: { name: 'Sunny Skate', bpm: 154, lv: .055, chords: 'e2 e2 a2 b2 c#3 a2 b2 e2', drums: 'k-h-sh-hk-hks-hh', lead: 'e5/2 g#5/2 b5/2 e6/2 b5/2 g#5/2 e5/4 f#5/2 g#5/2 a5/2 b5/2 c#6/4 b5/4 a5/2 c#6/2 e6/2 c#6/2 a5/4 e5/4 f#5/2 a5/2 b5/2 d#6/2 b5/8 c#6/2 b5/2 g#5/2 e5/2 c#5/4 e5/4 a5/2 g#5/2 f#5/2 e5/2 c#5/4 a4/4 b4/2 d#5/2 f#5/2 b5/2 a5/2 g#5/2 f#5/2 d#5/2 e5/4 b4/4 e5/8' },
+  j7: { name: 'Pixel Parade', bpm: 144, lv: .055, chords: 'bb2 bb2 eb3 f2 g2 eb3 f2 bb2', drums: 'k-s-k-s-kks-k-ss', lead: 'bb4/2 d5/2 f5/2 bb5/2 f5/2 d5/2 f5/4 bb5/2 a5/2 g5/2 f5/2 d5/4 f5/4 eb5/2 g5/2 bb5/2 eb6/2 d6/4 bb5/4 c6/2 bb5/2 a5/2 g5/2 f5/8 g5/2 bb5/2 d6/2 g6/2 f6/4 d6/4 eb6/2 d6/2 c6/2 bb5/2 g5/4 eb5/4 f5/2 g5/2 a5/2 bb5/2 c6/2 d6/2 eb6/2 c6/2 bb5/4 f5/4 bb5/8' },
+  j8: { name: 'Sticker Shuffle', bpm: 164, lv: .055, chords: 'a2 f#2 d3 e2 a2 f#2 d3 e2', drums: 'k-hhs-hhk-hhs-hk', lead: 'a5/2 e5/2 c#6/2 a5/2 e6/4 c#6/4 f#5/2 a5/2 c#6/2 f#6/2 e6/4 c#6/4 d6/2 c#6/2 b5/2 a5/2 f#5/4 a5/4 e5/2 g#5/2 b5/2 e6/2 d6/2 c#6/2 b5/4 a5/2 e5/2 c#6/2 a5/2 e6/4 c#6/4 f#5/2 a5/2 c#6/2 f#6/2 e6/4 c#6/4 d6/2 f#6/2 e6/2 d6/2 c#6/2 b5/2 a5/2 f#5/2 e5/2 g#5/2 b5/2 e6/2 a5/8' },
+  j9: { name: 'Blast-Off Boogie', bpm: 170, lv: .055, chords: 'c3 c3 ab2 bb2 c3 ab2 g2 g2', drums: 'kkhsk-hskkhsk-ss', lead: 'c5/2 eb5/2 g5/2 c6/2 g5/2 eb5/2 c5/2 g4/2 c5/2 eb5/2 g5/2 c6/2 bb5/4 g5/4 ab5/2 c6/2 eb6/2 c6/2 ab5/4 eb5/4 bb5/2 d6/2 f6/2 d6/2 bb5/8 c6/2 bb5/2 g5/2 eb5/2 g5/4 c6/4 ab5/2 g5/2 f5/2 eb5/2 c5/4 eb5/4 g5/2 f5/2 eb5/2 d5/2 b4/2 d5/2 f5/2 g5/2 g5/4 b5/4 d6/4 g6/4' },
+  j10: { name: 'Rainbow Disco', bpm: 158, lv: .055, chords: 'g2 b2 e2 c3 a2 d3 g2 d3', drums: 'k-hsk-hsk-hsk-hs', lead: 'd5/2 g5/2 b5/2 d6/2 r/2 b5/2 d6/4 d#5/2 f#5/2 b5/2 d#6/2 r/2 b5/2 f#5/4 e5/2 g5/2 b5/2 e6/2 d6/2 b5/2 g5/4 c6/2 e6/2 g6/2 e6/2 c6/8 a5/2 c6/2 e6/2 a6/2 g6/2 e6/2 c6/4 f#5/2 a5/2 d6/2 f#6/2 e6/4 d6/4 g5/2 b5/2 d6/2 g6/2 f#6/2 e6/2 d6/2 b5/2 a5/2 c6/2 f#6/2 a6/2 g6/8' },
   clear: { bpm: 150, lv: .08, once: true, lead: 'c5/2 e5/2 g5/2 c6/4 r/2 g5/2 c6/8', bass: 'c3/4 g3/4 c3/4 r/2 c3/8' },
 };
 
+const JUKEBOX = ['j1', 'j2', 'j3', 'j4', 'j5', 'j6', 'j7', 'j8', 'j9', 'j10'];
 const SND = (() => {
   let ac = null, mus, sfxG, noiseBuf, bus = null, cur = null, evs = [], evi = 0, loop = 0, t0 = 0, stepT = 0, songLen = 0, want = null;
   const NI = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
@@ -394,7 +405,8 @@ const SND = (() => {
     if (cur && cur.name === name) return;
     stop(); const S = SONGS[name]; if (!S) return;
     cur = Object.assign({ name }, S); stepT = 60 / S.bpm / 4;
-    const a = parse(S.lead, 'lead'), b = parse(S.bass, 'bass'); songLen = Math.max(a.t, b.t);
+    const bassStr = S.chords ? S.chords.split(' ').map(n => { const up = n.replace(/\d$/, d => +d + 1); return (n + '/2 ' + up + '/2 ').repeat(4); }).join('') : S.bass;
+    const a = parse(S.lead, 'lead'), b = parse(bassStr, 'bass'); songLen = Math.max(a.t, b.t);
     const dr = []; if (S.drums) for (let i = 0; i < songLen; i++) { const c = S.drums[i % S.drums.length]; if (c !== '-') dr.push({ t: i, ch: c, len: 1 }); }
     evs = [...a.out, ...b.out, ...dr].sort((x, y) => x.t - y.t); evi = 0; loop = 0;
     bus = ac.createGain(); bus.connect(mus); t0 = ac.currentTime + .08;
@@ -724,10 +736,15 @@ function startLevel(i, msg) {
   L.p = newPlayer(L.respawn.x, L.respawn.y);
   L.cam.x = 0;
   if (stickerCount() >= TWINKLE_AT) L.tw = { x: L.p.x - 40, y: L.p.y - 60 };
-  mode = 'play'; drawing = null; hideScreen(); SND.play(def.song); updateChrome();
+  mode = 'play'; drawing = null; hideScreen(); SND.play(levelSong(def)); updateChrome();
   try { window.focus(); } catch (e) { /* ignore */ }
 }
 
+function levelSong(def) {
+  if (save.song === 'shuffle') return JUKEBOX[Math.floor(Math.random() * JUKEBOX.length)];
+  if (save.song && SONGS[save.song]) return save.song;
+  return def.song;
+}
 function newPlayer(x, bottom) {
   return { hero: save.hero, x: x - 15, y: bottom - 44, w: 30, h: 44, vx: 0, vy: 0, facing: 1, onGround: false, onEnt: null, onOneway: false, onStroke: false, wasStroke: false,
     coyote: 0, jumpBuf: 0, actBuf: 0, downBuf: 0, jumpCut: false, usedDbl: false, big: false, inv: 0, dead: 0, cling: 0, wallLock: 0, dashT: 0, dashCd: 0, canDash: true,
@@ -1795,6 +1812,9 @@ function toggleMusic() { save.music = !save.music; persist(); SND.apply(); updat
 function pause() {
   if (mode !== 'play' || !L) return; mode = 'pause'; if (drawing) endDraw();
   for (const k of ['left', 'right', 'down', 'jumpHeld', 'actHeld']) inp[k] = false;
+  renderPause();
+}
+function renderPause() {
   const hk = HEROES[L.p.hero];
   show(`<h2>Paused</h2>
     <div class="kv">
@@ -1807,6 +1827,7 @@ function pause() {
       <b>Drop through</b><span>${touchMode() ? 'down button' : 'Down or S'} while standing on a plank or cloud</span>
     </div>
     <div class="toggle"><span>Music</span><button class="b" data-go="tMusic">${save.music ? 'On' : 'Off'}</button></div>
+    <div class="toggle"><span>Song</span><button class="b" data-go="juke" data-arg="pause">${esc(songLabel())} &#9835;</button></div>
     <div class="toggle"><span>Sound effects</span><button class="b" data-go="tSfx">${save.sfx ? 'On' : 'Off'}</button></div>
     <div class="btns"><button class="b" data-go="quit">Kingdom map</button><button class="b" data-go="restart">Restart level</button><button class="b primary" data-primary data-go="resume">Keep playing</button></div>`);
 }
@@ -1862,7 +1883,7 @@ function showMap() {
         ${locked ? '<span class="lock">Locked</span>' : ''}
       </button>`; }).join('')}</div>
     <div class="king"><img src="${SPR.king}" alt="King Thistlebeard"><p class="say"><b>King Thistlebeard:</b> ${medals ? `Splendid work, ${esc(save.name || 'hero')}! You have earned ${medals} of ${STICKERS.length} royal stickers.` : `Welcome, ${esc(save.name || 'hero')}! Rescue our friends and I shall award you royal stickers.`} ${medals < TWINKLE_AT ? `Earn ${TWINKLE_AT} stickers and little Twinkle will fly with you!` : 'Twinkle is flying with you and grabbing crayons.'}</p></div>
-    <div class="btns"><button class="b" data-go="title">Title</button><button class="b" data-go="settings">Settings</button><button class="b pink" data-go="stickers">Sticker book (${medals})</button><button class="b" data-go="heroes">Change hero</button></div>`, 'map-panel');
+    <div class="btns"><button class="b" data-go="title">Title</button><button class="b" data-go="settings">Settings</button><button class="b" data-go="juke" data-arg="map">Jukebox &#9835;</button><button class="b pink" data-go="stickers">Sticker book (${medals})</button><button class="b" data-go="heroes">Change hero</button></div>`, 'map-panel');
 }
 function showStickers() {
   mode = 'menu';
@@ -1876,11 +1897,26 @@ function showSettings() {
   show(`<h2>Settings</h2>
     <div class="toggle"><span>Game mode</span><button class="b" data-go="tMode">${save.mode === 'hard' ? 'Challenge (3 hearts)' : 'Relaxed (unlimited tries)'}</button></div>
     <div class="toggle"><span>Music</span><button class="b" data-go="tMusic">${save.music ? 'On' : 'Off'}</button></div>
+    <div class="toggle"><span>Song</span><button class="b" data-go="juke" data-arg="settings">${esc(songLabel())} &#9835;</button></div>
     <div class="toggle"><span>Sound effects</span><button class="b" data-go="tSfx">${save.sfx ? 'On' : 'Off'}</button></div>
     <div class="toggle"><span>Touch buttons</span><button class="b" data-go="tTouch">${{ auto: 'Automatic', on: 'Always show', off: 'Hide' }[save.touch]}</button></div>
     <div class="toggle"><span>Start over</span><button class="b" data-go="reset" id="resetBtn">Erase all progress</button></div>
     <p class="hand" style="color:#5d5677">Progress saves in this browser on this device.</p>
     <div class="btns"><button class="b primary" data-primary data-go="map">Done</button></div>`);
+}
+function songLabel() { return save.song === 'shuffle' ? 'Shuffle' : save.song && SONGS[save.song] ? SONGS[save.song].name : 'World music'; }
+let jukeFrom = 'map';
+function showJukebox(from) {
+  if (from) jukeFrom = from;
+  if (jukeFrom !== 'pause') mode = 'menu';
+  const opt = (id, name, sub) => `<button class="b ${save.song === id ? 'primary' : ''}" data-go="pickSong" data-arg="${id}" style="text-align:left;display:grid;gap:2px">${esc(name)}<small style="font:700 calc(var(--u)*1.3) 'Baloo 2',sans-serif;opacity:.75">${esc(sub)}</small></button>`;
+  show(`<div class="row" style="justify-content:space-between"><h2>Jukebox</h2><p class="hand">Tap a song to hear it. It plays in every level.</p></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--u)*1)">
+      ${opt('world', 'World music', 'Each world has its own tune')}
+      ${opt('shuffle', 'Shuffle', 'A surprise song every level')}
+      ${JUKEBOX.map((id, i) => opt(id, (i + 1) + '. ' + SONGS[id].name, SONGS[id].bpm + ' beats per minute')).join('')}
+    </div>
+    <div class="btns"><button class="b primary" data-primary data-go="jukeBack">Done</button></div>`);
 }
 function showResults(r) {
   const fmt = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
@@ -1911,7 +1947,18 @@ const GO = {
   start: () => { const nm = $('#nm'); if (nm) save.name = nm.value.trim().slice(0, 16); persist(); if (!save.heroPicked) showHeroes(); else showMap(); },
   play: b => { const i = +b.dataset.arg; if (i <= save.unlocked) startLevel(i); },
   pickHero: b => { const k = b.dataset.arg; if (!heroUnlocked(k)) { SND.sfx('out'); return; } save.hero = k; save.heroPicked = true; persist(); scr.querySelectorAll('.hero').forEach(x => x.classList.toggle('sel', x.dataset.arg === k)); },
-  resume, restart: () => { if (L) startLevel(L.idx); }, quit: () => { L = null; showMap(); },
+  resume, restart: () => { if (L) startLevel(L.idx); },
+  juke: b => showJukebox(b.dataset.arg),
+  pickSong: b => {
+    save.song = b.dataset.arg; if (!save.music) { save.music = true; SND.apply(); updateChrome(); } persist();
+    const id = save.song === 'world' ? (L ? L.def.song : 'meadow') : save.song === 'shuffle' ? JUKEBOX[Math.floor(Math.random() * JUKEBOX.length)] : save.song;
+    SND.play(id); showJukebox();
+  },
+  jukeBack: () => {
+    if (jukeFrom === 'pause' && L) { mode = 'pause'; renderPause(); if (save.song === 'world') SND.play(L.def.song); }
+    else if (jukeFrom === 'settings') { showSettings(); SND.play('title'); }
+    else showMap();
+  }, quit: () => { L = null; showMap(); },
   tMusic: b => { toggleMusic(); b.textContent = save.music ? 'On' : 'Off'; },
   tSfx: b => { save.sfx = !save.sfx; persist(); SND.apply(); b.textContent = save.sfx ? 'On' : 'Off'; },
   tMode: b => { save.mode = save.mode === 'hard' ? 'easy' : 'hard'; persist(); b.textContent = save.mode === 'hard' ? 'Challenge (3 hearts)' : 'Relaxed (unlimited tries)'; },
