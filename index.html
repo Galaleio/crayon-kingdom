@@ -144,6 +144,13 @@
   .king { display: grid; grid-template-columns: calc(var(--u) * 6) 1fr; gap: calc(var(--u) * 1); align-items: center; }
   .king img { width: 100%; max-height: calc(var(--u) * 8); object-fit: contain; }
   .say { background: var(--paper2); border: calc(var(--u) * .3) solid var(--ink); border-radius: calc(var(--u) * 1.4); padding: calc(var(--u) * .7) calc(var(--u) * 1.2); font-size: calc(var(--u) * 1.7); }
+  .tiers { display: flex; flex-wrap: wrap; gap: calc(var(--u) * .5); }
+  .tier { font: 400 calc(var(--u) * 1.5) "Lilita One", sans-serif; color: var(--ink); background: #fff; border: calc(var(--u) * .25) solid var(--ink); border-radius: 999px; padding: calc(var(--u) * .25) calc(var(--u) * 1); cursor: pointer; min-height: 36px; }
+  .tier.on { background: var(--tc); color: #fff; box-shadow: 0 calc(var(--u) * .3) 0 var(--ink); }
+  .tier.locked { opacity: .5; }
+  .lvl .tm { display: flex; gap: calc(var(--u) * .35); }
+  .lvl .tm i { width: calc(var(--u) * 1.1); height: calc(var(--u) * 1.1); border-radius: 50%; border: 2px solid var(--ink); background: #fff; }
+  .lvl .tm i.on { background: var(--tc); }
   .chip { display: inline-flex; align-items: center; gap: calc(var(--u) * .6); }
   .chip img { height: calc(var(--u) * 3.4); }
 
@@ -198,6 +205,11 @@
   .slot:nth-child(3n+2) { background: #f7b6c8; }
   .slot:nth-child(4n) { background: #a9d8f2; }
   .slot.bad { animation: shake .35s; }
+  .board { gap: calc(var(--u) * .5); }
+  .tray .tile { width: calc(var(--u) * var(--tz, 6.4)); height: calc(var(--u) * var(--tz, 6.4)); font-size: calc(var(--u) * var(--tz, 6.4) * .62); }
+  .tray { min-height: 0; }
+  .board .slot { width: calc(var(--u) * var(--sz, 7)); height: calc(var(--u) * var(--sz, 7)); }
+  .board .tile { width: calc(var(--u) * var(--sz, 7) * .91); height: calc(var(--u) * var(--sz, 7) * .91); font-size: calc(var(--u) * var(--sz, 7) * .57); }
   .slot.bad .tile { background: #ffb3b3; }
   .tray { display: flex; flex-wrap: wrap; gap: calc(var(--u) * .8); min-height: calc(var(--u) * 7.4); justify-content: center; padding: calc(var(--u) * .8); background: #c98a4b; border: calc(var(--u) * .35) solid var(--ink); border-radius: calc(var(--u) * 1.2); }
   .tile { position: relative; width: calc(var(--u) * 6.4); height: calc(var(--u) * 6.4); border-radius: calc(var(--u) * .6); border: calc(var(--u) * .25) solid #8a6a3a;
@@ -255,9 +267,11 @@ let usedTouch = false;
 const SAVE_KEY = 'crayonKingdom.v1';
 const defSave = () => ({ name: '', mode: 'easy', hero: 'princess2', heroPicked: false, unlocked: 0, levels: {},
   totals: { crayons: 0, stomps: 0, bridges: 0, zaps: 0, words: 0 }, wordsDone: [], rides: {}, stickers: {}, heroesCleared: {}, friends: {}, flags: {},
-  music: true, sfx: true, touch: 'auto', song: 'world', voice: 'heart', readAloud: true });
+  music: true, sfx: true, touch: 'auto', song: 'world', voice: 'heart', readAloud: true, tier: 0, tierMax: 0, medals: {} });
 let save = defSave();
 try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s) { save = Object.assign(defSave(), s); save.totals = Object.assign(defSave().totals, s.totals); save.flags = s.flags || {}; } } catch (e) { /* storage unavailable: play without saving */ }
+if (save.flags.boss) save.tierMax = Math.max(save.tierMax || 0, 1);
+save.tier = Math.min(save.tier || 0, save.tierMax || 0); save.medals = save.medals || {};
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* ignore */ } }
 const countStars = s => Object.values(s.levels).reduce((a, l) => a + (l.stars || []).filter(Boolean).length, 0);
 
@@ -298,11 +312,17 @@ const STICKERS = [
   ['words5', 'Word Wizard', 'Spell 5 picture words', 'elf', s => (s.totals.words || 0) >= 5],
   ['words15', 'Spelling Star', 'Spell 15 picture words', 'spooky', s => (s.totals.words || 0) >= 15],
   ['vroom', 'Vroom Vroom!', 'Ride the car, plane, rocket and jetpack', 'car', s => ['car', 'plane', 'rocket', 'jetpack'].every(k => s.rides && s.rides[k])],
+  ['beat1', 'Explorer Badge', 'Defeat Big Blotto on Explorer', 'cat', s => !!s.flags.beat1],
+  ['beat2', 'Adventurer Badge', 'Defeat Big Blotto on Adventurer', 'wolf', s => !!s.flags.beat2],
+  ['beat3', 'Expert Crown', 'Defeat Big Blotto on Expert', 'princess', s => !!s.flags.beat3],
+  ['xwords', 'Spelling Champion', 'Spell 5 words on Expert', 'owl', s => (s.totals.xwords || 0) >= 5],
 ];
 const TWINKLE_AT = 8;
 const WORDS = [['CAT', 'cat'], ['PIG', 'piggy'], ['OWL', 'owl'], ['DOG', 'puppy'], ['BUG', 'ladybug'], ['ELF', 'elf2'], ['CAR', 'car'],
   ['LAMB', 'lamb'], ['WOLF', 'wolf'], ['KING', 'king'], ['CHICK', 'chick'], ['BUNNY', 'rabbit'], ['GHOST', 'spooky'], ['FAIRY', 'fairy'],
-  ['PLANE', 'plane'], ['BERRY', 'berry'], ['ROCKET', 'rocket'], ['JETPACK', 'jetpack'], ['PRINCESS', 'princess2']];
+  ['PLANE', 'plane'], ['BERRY', 'berry'], ['ROCKET', 'rocket'], ['JETPACK', 'jetpack'], ['PRINCESS', 'princess2'],
+  ['PUPPY', 'puppy', 1], ['PIGGY', 'piggy', 1], ['KITTY', 'cat', 1], ['KITTEN', 'cat', 1], ['RABBIT', 'rabbit', 1], ['WIZARD', 'wizard', 1],
+  ['LADYBUG', 'ladybug', 1], ['RAINBOW', 'rainbowpig', 1], ['AIRPLANE', 'plane', 1], ['SORCERER', 'wizard', 1], ['SPACESHIP', 'rocket', 1], ['STRAWBERRY', 'berry', 1]];
 const LETTER_PTS = { A: 1, B: 3, C: 3, D: 2, E: 1, F: 4, G: 2, H: 4, I: 1, J: 8, K: 5, L: 1, M: 3, N: 1, O: 1, P: 3, Q: 10, R: 1, S: 1, T: 1, U: 1, V: 4, W: 4, X: 8, Y: 4, Z: 10 };
 const VEH = {
   car: { name: 'Crayon Car', hint: 'Zoom! Jump with %J. Press %P to hop out.', time: 20 },
@@ -310,6 +330,15 @@ const VEH = {
   rocket: { name: 'Rocket', hint: 'BLAST OFF! Steer with %J and %D. %P to hop out.', time: 5 },
   jetpack: { name: 'Jetpack', hint: 'Hold %J to fly!', time: 6 },
 };
+// Skill levels. Each one: faster scribbles (spd), longer worlds (ext columns), extra scribbles, spelling range and decoy letters, boss hits.
+const TIERS = [
+  { name: 'Beginner', col: '#5a9e1c', spd: 1, ext: 0, extra: 0, lo: 3, hi: 8, decoy: 0, boss: 3, blurb: 'Gentle worlds and short words.' },
+  { name: 'Explorer', col: '#2f6fd1', spd: 1.12, ext: 26, extra: 2, lo: 4, hi: 6, decoy: 1, boss: 4, blurb: 'Faster scribbles, longer worlds and 4 to 6 letter words.' },
+  { name: 'Adventurer', col: '#7a4bd6', spd: 1.25, ext: 44, extra: 4, lo: 5, hi: 8, decoy: 2, boss: 5, blurb: 'More scribbles, bigger gaps and words up to 8 letters.' },
+  { name: 'Expert', col: '#e63946', spd: 1.4, ext: 64, extra: 6, lo: 7, hi: 10, decoy: 3, boss: 6, blurb: 'The longest worlds, the trickiest jumps and the biggest words.' },
+];
+const tierNo = () => save.tier || 0;
+let tierNews = 0;
 const stickerCount = () => Object.keys(save.stickers).length;
 
 // ================= images =================
@@ -675,9 +704,10 @@ const SIGNS = {
 const touchMode = () => save.touch === 'on' || (save.touch === 'auto' && (COARSE || usedTouch));
 const keyWords = s => s.replace(/%P/g, touchMode() ? 'the star button' : 'X').replace(/%D/g, touchMode() ? 'the down button' : 'DOWN').replace(/%J/g, touchMode() ? 'JUMP' : 'SPACE');
 
-function buildLevel(def) {
-  const g = [...Array(ROWS)].map(() => Array(def.w).fill(' ')); const ents = [];
-  const set = (x, y, c) => { if (x >= 0 && x < def.w && y >= 0 && y < ROWS) g[y][x] = c; };
+function buildLevel(def, idx) {
+  const tn = def.boss ? 0 : tierNo(), TR = TIERS[tn], cap = def.w + TR.ext + 40;
+  const g = [...Array(ROWS)].map(() => Array(cap).fill(' ')); const ents = [];
+  const set = (x, y, c) => { if (x >= 0 && x < cap && y >= 0 && y < ROWS) g[y][x] = c; };
   const b = {
     ground(x0, x1, top = 11) { for (let x = x0; x <= x1; x++) for (let y = top; y < ROWS; y++) set(x, y, '#'); },
     row(x, y, len, ch = '=') { for (let i = 0; i < len; i++) set(x + i, y, ch); },
@@ -686,15 +716,69 @@ function buildLevel(def) {
     e(type, x, y, o = {}) { ents.push(Object.assign({ type, x, y }, o)); },
     crayons(x, y, n) { for (let i = 0; i < n; i++) ents.push({ type: 'crayon', x: x + i, y }); },
   };
-  def.build(b); return { grid: g, defs: ents, cols: def.w };
+  def.build(b);
+  let cols = def.w;
+  if (tn > 0) {
+    const rng = mulberry(idx * 7919 + tn * 104729);
+    addScribbles(g, ents, TR.extra, rng, tn);
+    cols = extendLevel(b, ents, def, tn, rng);
+  }
+  return { grid: g.map(r => r.slice(0, cols)), defs: ents, cols };
+}
+// Harder skill levels sprinkle extra scribbles on flat ground, away from friends, signs, checkpoints and vehicles.
+function addScribbles(g, ents, n, rng, tn) {
+  const flag = ents.find(e => e.type === 'flag'); if (!flag || !n) return;
+  const busy = ents.filter(e => e.type !== 'crayon' && e.type !== 'star');
+  const ok = x => g[11][x] === '#' && g[11][x - 1] === '#' && g[11][x + 1] === '#' && g[10][x] === ' ' && g[9][x] === ' ' && g[8][x] === ' '
+    && !busy.some(e => Math.abs(e.x - x) < 4 || (e.type === 'gaston' && x >= e.x - 2 && x <= e.stop + 2));
+  const spots = []; for (let x = 16; x < flag.x - 8; x++) if (ok(x)) spots.push(x);
+  const picked = [];
+  while (picked.length < n && spots.length) {
+    const x = spots.splice(Math.floor(rng() * spots.length), 1)[0];
+    if (picked.every(p => Math.abs(p - x) >= 9)) picked.push(x);
+  }
+  picked.forEach((x, k) => ents.push(k % 2 && tn > 1 ? { type: 'squig', x, y: 8 } : { type: 'blot', x, y: 10 }));
+}
+// Longer worlds: the flag moves further right and a new stretch is built from friendly chunks.
+function extendLevel(b, ents, def, tn, rng) {
+  const fi = ents.findIndex(e => e.type === 'flag'); if (fi < 0) return def.w;
+  const fx = ents[fi].x; ents[fi] = { type: 'check', x: fx, y: 10 };
+  const gap = tn >= 2 ? 3 : 2;
+  const C = {
+    hop(x) { b.ground(x, x + 3); b.crayons(x + 4, 8, gap); b.ground(x + 4 + gap, x + 9 + gap); if (tn >= 3) b.e('blot', x + 7 + gap, 10); return 10 + gap; },
+    steps(x) { b.ground(x, x + 2); b.ground(x + 3, x + 5, 9); b.ground(x + 6, x + 8, 7); b.crayons(x + 6, 6, 3); b.ground(x + 9, x + 11, 9); b.ground(x + 12, x + 15); if (tn >= 2) b.e('squig', x + 10, 6); return 16; },
+    march(x) { b.ground(x, x + 14); b.put(x + 6, 7, '?'); b.put(x + 7, 7, '='); b.put(x + 8, 7, '!'); b.e('blot', x + 4, 10); b.e('blot', x + 11, 10); if (tn >= 3) b.e('blot', x + 13, 10); b.crayons(x + 2, 10, 2); return 15; },
+    ledge(x) { b.ground(x, x + 2); b.row(x + 4, 9, 3, '-'); b.crayons(x + 4, 8, 3); b.ground(x + 8, x + 12); if (tn >= 3) b.e('squig', x + 5, 6); return 13; },
+    cloud(x) { b.ground(x, x + 2); b.e('mover', x + 3, 9, { x2: x + 6, y2: 9 }); b.crayons(x + 4, 7, 3); b.ground(x + 10, x + 14); return 15; },
+    ink(x) { b.ground(x, x + 3); b.ink(x + 4, x + 6); b.crayons(x + 4, 7, 3); b.ground(x + 7, x + 11); if (tn >= 2) b.e('blot', x + 10, 10); return 12; },
+    boo(x) { b.ground(x, x + 13); b.e('boo', x + 8, 10); b.crayons(x + 3, 10, 3); b.put(x + 5, 7, '?'); return 14; },
+    spring(x) { b.ground(x, x + 11); b.e('spring', x + 4, 10); b.row(x + 3, 5, 4, '-'); b.crayons(x + 3, 4, 4); b.put(x + 9, 7, '?'); if (tn >= 2) b.e('blot', x + 9, 10); return 12; },
+    word(x) { b.ground(x, x + 8); b.put(x + 4, 7, 'W'); b.crayons(x + 1, 10, 2); return 9; },
+  };
+  const pool = ['hop', 'steps', 'march', 'ledge', 'spring', 'hop', 'march'];
+  if (def.world === 'rainbow' || tn >= 2) pool.push('cloud');
+  if (def.world === 'sand' || def.world === 'parade' || tn >= 2) pool.push('ink');
+  if (tn >= 2) pool.push('boo');
+  let x = def.w, lastK = '', wordAt = Math.floor(rng() * 2) + 1, n = 0;
+  b.ground(fx, def.w + 1);
+  b.e('npc', fx + 3, 10, { who: 'wizard', text: TIERS[tn].name + ' path, %N! The flag has moved further on. Keep going!', speak: 'The flag has moved further on. Keep going!' });
+  while (x < def.w + TIERS[tn].ext) {
+    let k = n === wordAt ? 'word' : pool[Math.floor(rng() * pool.length)];
+    if (k === lastK) k = k === 'march' ? 'hop' : 'march';
+    x += C[k](x); lastK = k; n++;
+    if (n % 3 === 0) b.e('check', x - 2, 10);
+  }
+  b.ground(x, x + 14); b.crayons(x + 2, 10, 4); b.e('flag', x + 9, 10);
+  return x + 15;
 }
 
 // ================= level state =================
 let L = null, mode = 'menu', gt = 0, drawing = null;
 const hard = () => save.mode === 'hard';
+const espd = () => Math.min(1.7, TIERS[tierNo()].spd * (hard() ? 1.3 : 1));
 
 function makeEnt(d, i) {
-  const cx = (d.x + .5) * T, cy = (d.y + .5) * T, by = (d.y + 1) * T, spd = hard() ? 1.3 : 1;
+  const cx = (d.x + .5) * T, cy = (d.y + .5) * T, by = (d.y + 1) * T, spd = espd();
   switch (d.type) {
     case 'crayon': return { type: 'crayon', x: cx - 10, y: cy - 17, w: 20, h: 34, col: COLORS[i % COLORS.length], ph: Math.random() * 6 };
     case 'star': return { type: 'star', i: d.i, x: cx - 18, y: cy - 18, w: 36, h: 36, had: !!(L.prevStars[d.i]) };
@@ -706,19 +790,19 @@ function makeEnt(d, i) {
     case 'flag': return { type: 'flag', x: cx - 10, y: by - 230, w: 40, h: 230 };
     case 'spring': return { type: 'spring', x: cx - 24, y: by - 34, w: 48, h: 34, sq: 0 };
     case 'sign': return { type: 'sign', key: d.key, x: cx - 22, y: by - 56, w: 44, h: 56 };
-    case 'npc': return { type: 'npc', who: d.who, text: d.text, x: cx - 24, y: by - 80, w: 48, h: 80 };
+    case 'npc': return { type: 'npc', who: d.who, text: d.text, speak: d.speak, x: cx - 24, y: by - 80, w: 48, h: 80 };
     case 'blot': return { type: 'blot', x: cx - 20, y: by - 40, w: 40, h: 40, vx: -70 * spd, vy: 0 };
     case 'squig': return { type: 'squig', x: cx - 22, y: cy - 22, w: 44, h: 44, vx: -80 * spd, baseY: cy - 22, homeX: cx, ph: Math.random() * 6 };
     case 'boo': return { type: 'boo', x: cx - 24, y: by - 52, w: 48, h: 50, baseY: by - 52, a: 1, shy: false };
     case 'mover': return { type: 'mover', solid: 'oneway', x: d.x * T, y: d.y * T, w: 3 * T, h: 22, ax: d.x * T, ay: d.y * T, bx: d.x2 * T, byy: d.y2 * T, t: 0, dir: 1, dx: 0, dy: 0 };
     case 'gaston': return { type: 'gaston', solid: 'full', x: d.x * T, y: by - 130, w: 4 * T, h: 130, startX: d.x * T, stopX: d.stop * T, fed: false, dx: 0, dy: 0, walk: 0 };
-    case 'boss': { const hp = hard() ? 5 : 3; return { type: 'boss', x: cx - 75, y: by - 150, w: 150, h: 150, vx: 0, vy: 0, hp, max: hp, state: 'idle', t: 1.6, inv: 0, lands: 0, sq: 0 }; }
+    case 'boss': { const hp = TIERS[tierNo()].boss + (hard() ? 2 : 0); return { type: 'boss', x: cx - 75, y: by - 150, w: 150, h: 150, vx: 0, vy: 0, hp, max: hp, state: 'idle', t: 1.6, inv: 0, lands: 0, sq: 0 }; }
   }
   return null;
 }
 
 function startLevel(i, msg) {
-  const def = LEVELS[i]; const b = buildLevel(def);
+  const def = LEVELS[i]; const b = buildLevel(def, i);
   L = { idx: i, def, wk: def.world, Wd: WORLDS[def.world], grid: b.grid, cols: b.cols, rows: ROWS, tiles: worldTiles(def.world), hills: worldHills(def.world),
     bump: {}, ents: [], parts: [], strokes: [], strokeN: 0, cam: { x: 0, y: 84 }, ammo: 5, got: 0, total: 0, stars: [false, false, false],
     prevStars: (save.levels[i] && save.levels[i].stars) || [], friends: [], friendTotal: 0, berries: 0, need: hard() ? 3 : 2, time: 0, hurt: false,
@@ -1147,7 +1231,7 @@ function respawn() {
   L.cam.x = clamp(P.x - W / 3, 0, L.cols * T - W);
 }
 
-function spawnMini(x, y, d) { const spd = hard() ? 1.3 : 1; L.ents.push({ type: 'mini', x: x - 15, y, w: 30, h: 30, vx: d * 130 * spd, vy: -420, grace: .45 }); }
+function spawnMini(x, y, d) { const spd = espd(); L.ents.push({ type: 'mini', x: x - 15, y, w: 30, h: 30, vx: d * 130 * spd, vy: -420, grace: .45 }); }
 function squash(e, how) {
   if (e.dead) return; e.dead = true; SND.sfx('stomp'); splat(e.x + e.w / 2, e.y + e.h / 2, 14);
   if (how !== 'gaston') save.totals.stomps++;
@@ -1165,7 +1249,8 @@ function hitBoss(e) {
   if (e.hp <= 0) {
     e.defeated = true; e.after = 2.6; SND.stop(); SND.sfx('star');
     for (const o of L.ents) if (o.type === 'mini') { o.dead = true; splat(o.x + 15, o.y + 15, 8); }
-    confetti(e.x + e.w / 2, e.y + 40, 70); save.flags.boss = true; if (hard()) save.flags.hard = true; persist(); checkStickers();
+    confetti(e.x + e.w / 2, e.y + 40, 70); save.flags.boss = true; if (hard()) save.flags.hard = true; save.flags['beat' + tierNo()] = true;
+    if (tierNo() >= (save.tierMax || 0) && (save.tierMax || 0) < 3) { save.tierMax = tierNo() + 1; tierNews = save.tierMax; } persist(); checkStickers();
   } else spawnMini(e.x + e.w / 2, e.y + 40, L.p.x < e.x ? -1 : 1);
   return true;
 }
@@ -1184,7 +1269,7 @@ function updateEnt(e, dt) {
       const pcx = P.x + P.w / 2, ecx = e.x + e.w / 2, d = Math.hypot(ecx - pcx, e.y + e.h / 2 - (P.y + P.h / 2));
       e.shy = ((ecx > pcx) === (P.facing > 0)) && d < 600 && P.dead <= 0;
       e.a += ((e.shy ? .28 : 1) - e.a) * Math.min(1, dt * 6);
-      if (!e.shy && d < 560 && P.dead <= 0) { const sp = 72 * (hard() ? 1.3 : 1); e.x += Math.sign(pcx - ecx) * sp * dt; e.y += clamp(P.y + P.h / 2 - (e.y + e.h / 2), -1, 1) * sp * .6 * dt; }
+      if (!e.shy && d < 560 && P.dead <= 0) { const sp = 72 * espd(); e.x += Math.sign(pcx - ecx) * sp * dt; e.y += clamp(P.y + P.h / 2 - (e.y + e.h / 2), -1, 1) * sp * .6 * dt; }
       e.y = Math.min(e.y, e.baseY + 8); break;
     }
     case 'zap': {
@@ -1220,7 +1305,7 @@ function bossUpdate(e, dt) {
   e.prevBottom = e.y + e.h; const dy = e.vy * dt; e.y += dy;
   const r = tileCollideY(e, dy, false);
   if (r.landed) {
-    if (e.state === 'air') { e.state = 'idle'; e.t = hard() ? .55 : .95; L.shake = 12; e.sq = .25; SND.sfx('pound'); e.lands++; if (e.lands % 2 === 0) spawnMini(e.x + e.w / 2, e.y + e.h - 40, P.x < e.x ? -1 : 1); }
+    if (e.state === 'air') { e.state = 'idle'; e.t = Math.max(.4, (hard() ? .55 : .95) - tierNo() * .12); L.shake = 12; e.sq = .25; SND.sfx('pound'); e.lands++; if (e.lands % 2 === 0) spawnMini(e.x + e.w / 2, e.y + e.h - 40, P.x < e.x ? -1 : 1); }
     e.vx = 0;
     if (e.state === 'idle' && P.dead <= 0) { e.t -= dt; if (e.t <= 0) { e.state = 'air'; const d = Math.sign(P.x + P.w / 2 - (e.x + e.w / 2)) || 1; e.vx = d * (200 + (e.max - e.hp) * 45) * (hard() ? 1.2 : 1); e.vy = -(820 + Math.random() * 260); } }
   }
@@ -1288,6 +1373,7 @@ function finishLevel() {
   save.levels[i] = { done: true, stars, best: Math.max(prev.best || 0, pct) };
   save.unlocked = Math.max(save.unlocked, Math.min(LEVELS.length - 1, i + 1));
   save.heroesCleared[save.hero] = true;
+  save.medals[i] = Math.max(save.medals[i] === undefined ? -1 : save.medals[i], tierNo());
   if (!L.hurt) save.flags.flawless = true;
   if (L.total && L.got >= L.total) save.flags.full = true;
   if (i === 0 && L.time < 90) save.flags.speedy = true;
@@ -1320,17 +1406,18 @@ function playClip(text, voice, fallback) {
 // ================= word puzzle =================
 let PZ = null, pzDrag = null;
 function pickWord() {
-  const maxLen = L ? [4, 5, 6, 8, 8][L.idx] : 8;
+  const tn = tierNo(), TR = TIERS[tn], maxLen = tn ? TR.hi : (L ? [4, 5, 6, 8, 8][L.idx] : 8);
+  const fits = w => w[0].length >= TR.lo && w[0].length <= maxLen && (tn || !w[2]);
   const done = save.wordsDone || [];
-  let pool = WORDS.filter(w => w[0].length <= maxLen && !done.includes(w[0]));
-  if (!pool.length) { save.wordsDone = []; pool = WORDS.filter(w => w[0].length <= maxLen); }
+  let pool = WORDS.filter(w => fits(w) && !done.includes(w[0]));
+  if (!pool.length) { save.wordsDone = []; pool = WORDS.filter(fits); }
   return pool[Math.floor(Math.random() * pool.length)];
 }
 function openWord() {
   if (!L || L.done) return;
   const [word, spr] = pickWord();
   const letters = word.split('');
-  if (hard()) { const abc = 'ABCDEFGHIJKLMNOPRSTUW'; for (let i = 0; i < 2; i++) letters.push(abc[Math.floor(Math.random() * abc.length)]); }
+  { const abc = 'ABCDEFGHIJKLMNOPRSTUW', nd = TIERS[tierNo()].decoy + (hard() ? 1 : 0); for (let i = 0; i < nd; i++) letters.push(abc[Math.floor(Math.random() * abc.length)]); }
   let mix;
   do { mix = letters.slice().sort(() => Math.random() - .5); } while (mix.slice(0, word.length).join('') === word && word.length > 1);
   PZ = { word, spr, slots: word.split('').map(() => null), tiles: mix.map((ch, id) => ({ id, ch, slot: null, lock: false })), tries: 0, done: false };
@@ -1373,6 +1460,8 @@ const SPOKEN_NPC = ['Welcome, hero! The Scribble Squad has trapped our friends i
 function tileHTML(t) { return `<button class="tile ${t.lock ? 'lock' : ''}" data-tile="${t.id}" aria-label="Letter ${t.ch}">${t.ch}<small>${LETTER_PTS[t.ch] || 1}</small></button>`; }
 function renderPZ(bad) {
   if (!PZ) return;
+  $('#pzBoard').style.setProperty('--sz', Math.min(7, 44 / PZ.word.length).toFixed(2));
+  $('#pzTray').style.setProperty('--tz', PZ.tiles.length > 9 ? 5 : 6.4);
   $('#pzBoard').innerHTML = PZ.slots.map((id, i) => `<div class="slot ${bad && bad.includes(i) ? 'bad' : ''}" data-slot="${i}">${id !== null ? tileHTML(PZ.tiles[id]) : ''}</div>`).join('');
   $('#pzTray').innerHTML = PZ.tiles.filter(t => t.slot === null).map(tileHTML).join('');
   scr.querySelectorAll('.tile').forEach(el => el.addEventListener('pointerdown', tileDown));
@@ -1451,8 +1540,8 @@ function hintPZ() {
 }
 function winPZ() {
   PZ.done = true; PZ.tiles.forEach(t => t.lock = true); renderPZ();
-  const pts = PZ.word.split('').reduce((a, ch) => a + (LETTER_PTS[ch] || 1), 0), prize = PZ.word.length + 2;
-  L.ammo += prize; L.words++; save.totals.words = (save.totals.words || 0) + 1; save.totals.crayons += prize;
+  const pts = PZ.word.split('').reduce((a, ch) => a + (LETTER_PTS[ch] || 1), 0), prize = PZ.word.length + 2 + tierNo() * 2;
+  L.ammo += prize; L.words++; save.totals.words = (save.totals.words || 0) + 1; if (tierNo() >= 3) save.totals.xwords = (save.totals.xwords || 0) + 1; save.totals.crayons += prize;
   save.wordsDone = (save.wordsDone || []).concat(PZ.word); persist();
   SND.sfx('star'); const wWord = PZ.word; setTimeout(() => { speak(wWord); setTimeout(() => sayLine('Great spelling!'), 1100); }, 350);
   scr.querySelector('.pz').classList.add('win');
@@ -1775,7 +1864,7 @@ function drawHUD() {
   }
   if (L.intro > 0) {
     const a = Math.min(1, L.intro * 1.5); ctx.globalAlpha = a;
-    txt('World ' + (L.idx + 1), W / 2, H / 2 - 70, 28, '#fff', 'center', DISPLAY, '#221d38', 7);
+    txt('World ' + (L.idx + 1) + (tierNo() ? '  |  ' + TIERS[tierNo()].name : ''), W / 2, H / 2 - 70, 28, '#fff', 'center', DISPLAY, '#221d38', 7);
     txt(L.def.name, W / 2, H / 2 - 28, 54, '#ffd23f', 'center', DISPLAY, '#221d38', 10);
     txt(HEROES[P.hero].name + ': ' + keyWords(HEROES[P.hero].hint), W / 2, H / 2 + 22, 20, '#fff', 'center', BODY, '#221d38', 6);
     ctx.globalAlpha = 1;
@@ -1802,7 +1891,7 @@ function drawLevel() {
   if (L.tw) drawSpr('flyer', L.tw.x, L.tw.y + 30, 40, P.facing < 0, Math.sin(gt * 8) * .15);
   drawParts();
   for (const e of L.ents) {
-    if (e.type === 'npc' && Math.abs(P.x - e.x) < 230) { bubble(e.text.replace('%N', save.name || 'hero'), e.x + 24, e.y); if (!e.said) { e.said = true; if (SPOKEN_NPC[L.idx]) sayLine(SPOKEN_NPC[L.idx]); } }
+    if (e.type === 'npc' && Math.abs(P.x - e.x) < 230) { bubble(e.text.replace('%N', save.name || 'hero'), e.x + 24, e.y); if (!e.said) { e.said = true; const line = e.speak || SPOKEN_NPC[L.idx]; if (line) sayLine(line); } }
     if (e.type === 'sign' && Math.abs(P.x - e.x) < 150) { const s = SIGNS[e.key]; bubble(touchMode() ? s.t : s.k, e.x + 22, e.y); if (!e.said) { e.said = true; const sp = SPOKEN_SIGNS[e.key]; if (sp) sayLine(typeof sp === 'string' ? sp : touchMode() ? sp.t : sp.k); } }
   }
   ctx.restore();
@@ -1908,6 +1997,7 @@ function showMap() {
   const next = Math.min(save.unlocked, LEVELS.length - 1);
   show(`<div class="row" style="justify-content:space-between">
       <h2>Kingdom Map</h2>
+      <div class="tiers" role="group" aria-label="Skill level">${TIERS.map((t, k) => `<button class="tier ${k === tierNo() ? 'on' : ''} ${k > (save.tierMax || 0) ? 'locked' : ''}" style="--tc:${t.col}" data-go="pickTier" data-arg="${k}" aria-pressed="${k === tierNo()}">${k > (save.tierMax || 0) ? '&#128274; ' : ''}${t.name}</button>`).join('')}</div>
       <span class="chip"><img src="${SPR[save.hero]}" alt=""><b style="font-family:'Lilita One',sans-serif;font-weight:400">${esc(HEROES[save.hero].name)}</b></span>
     </div>
     <div class="map">${LEVELS.map((lv, i) => { const st = save.levels[i] || {}, locked = i > save.unlocked;
@@ -1916,9 +2006,10 @@ function showMap() {
         ${thumb ? `<img class="th" src="${thumb}" alt="">` : `<div class="th" style="display:grid;place-items:center"><img src="${SPR.inky}" alt="" style="height:80%;width:auto"></div>`}
         <span class="num">World ${i + 1}</span><b>${esc(lv.name)}</b>
         ${lv.boss ? `<span class="num" style="color:var(--berry)">Boss battle</span>` : `<span class="st">${[0, 1, 2].map(k => `<i class="${st.stars && st.stars[k] ? 'on' : ''}">&#9733;</i>`).join('')}</span>`}
+        ${!locked && save.medals[i] !== undefined ? `<span class="tm" title="Best skill level cleared">${TIERS.map((t, k) => `<i style="--tc:${t.col}" class="${k <= save.medals[i] ? 'on' : ''}"></i>`).join('')}</span>` : ''}
         ${locked ? '<span class="lock">Locked</span>' : ''}
       </button>`; }).join('')}</div>
-    <div class="king"><img src="${SPR.king}" alt="King Thistlebeard"><p class="say"><b>King Thistlebeard:</b> ${medals ? `Splendid work, ${esc(save.name || 'hero')}! You have earned ${medals} of ${STICKERS.length} royal stickers.` : `Welcome, ${esc(save.name || 'hero')}! Rescue our friends and I shall award you royal stickers.`} ${medals < TWINKLE_AT ? `Earn ${TWINKLE_AT} stickers and little Twinkle will fly with you!` : 'Twinkle is flying with you and grabbing crayons.'}</p></div>
+    <div class="king"><img src="${SPR.king}" alt="King Thistlebeard"><p class="say"><b>King Thistlebeard:</b> ${medals ? `Splendid work, ${esc(save.name || 'hero')}! You have earned ${medals} of ${STICKERS.length} royal stickers.` : `Welcome, ${esc(save.name || 'hero')}! Rescue our friends and I shall award you royal stickers.`} ${medals < TWINKLE_AT ? `Earn ${TWINKLE_AT} stickers and little Twinkle will fly with you!` : 'Twinkle is flying with you and grabbing crayons.'} Skill level: <b>${TIERS[tierNo()].name}</b>. ${TIERS[tierNo()].blurb}</p></div>
     <div class="btns"><button class="b" data-go="title">Title</button><button class="b" data-go="settings">Settings</button><button class="b" data-go="juke" data-arg="map">Jukebox &#9835;</button><button class="b pink" data-go="stickers">Sticker book (${medals})</button><button class="b" data-go="heroes">Change hero</button></div>`, 'map-panel');
 }
 function showStickers() {
@@ -1932,6 +2023,8 @@ function showSettings() {
   mode = 'menu'; resetArmed = false;
   show(`<h2>Settings</h2>
     <div class="toggle"><span>Game mode</span><button class="b" data-go="tMode">${save.mode === 'hard' ? 'Challenge (3 hearts)' : 'Relaxed (unlimited tries)'}</button></div>
+    <div class="toggle"><span>Skill level</span><button class="b" data-go="tSkill">${TIERS[tierNo()].name}</button></div>
+    ${(save.tierMax || 0) < 3 ? '<div class="toggle"><span>Grown-ups</span><button class="b" data-go="unlockAll">Unlock every skill level</button></div>' : ''}
     <div class="toggle"><span>Music</span><button class="b" data-go="tMusic">${save.music ? 'On' : 'Off'}</button></div>
     <div class="toggle"><span>Voice</span><button class="b" data-go="tVoice">${esc(voiceLabel())}</button></div>
     <div class="toggle"><span>Read signs aloud</span><button class="b" data-go="tRead">${save.readAloud ? 'On' : 'Off'}</button></div>
@@ -1957,7 +2050,17 @@ function showJukebox(from) {
     </div>
     <div class="btns"><button class="b primary" data-primary data-go="jukeBack">Done</button></div>`);
 }
+// A child who clears a world cleanly is invited up a skill level, so replays never get stale.
+function masteryNudge(r) {
+  const t = tierNo(), up = TIERS[t + 1], mastered = !r.hurt || r.stars.every(Boolean) || r.pct >= 90;
+  if (!up || !mastered) return { html: '', btn: '' };
+  if (t + 1 <= (save.tierMax || 0)) return {
+    html: `<div class="unlock"><img src="${SPR.owl}" alt=""><div><b style="font-family:'Lilita One',sans-serif;font-weight:400;font-size:calc(var(--u)*2.2)">You mastered this world!</b><br>Ready for ${up.name}? ${up.blurb}</div></div>`,
+    btn: `<button class="b pink" data-go="tierUp" data-t="${t + 1}" data-arg="${r.idx}">Try ${up.name}</button>` };
+  return { html: `<p class="hand">You mastered this world! Beat Big Blotto on ${TIERS[t].name} to unlock ${up.name}.</p>`, btn: '' };
+}
 function showResults(r) {
+  const nudge = masteryNudge(r); if (nudge.html) sayLine('You mastered this world!');
   const fmt = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
   show(`<h2>Level clear!</h2><p class="hand">${esc(r.name)}${r.hurt ? '' : ' - not a single scratch!'}</p>
     <div class="res">
@@ -1969,15 +2072,17 @@ function showResults(r) {
     </div>
     ${r.snout ? `<div class="unlock"><img src="${SPR.rainbowpig}" alt=""><div><b style="font-family:'Lilita One',sans-serif;font-weight:400;font-size:calc(var(--u)*2.2)">New hero unlocked!</b><br>Rainbow Snout can now join your team. Pick them on the hero screen.</div></div>` : ''}
     ${r.newOnes.length ? `<p><b>New stickers:</b> ${r.newOnes.map(s => esc(s.name)).join(', ')}</p>` : ''}
-    <div class="btns"><button class="b" data-go="map">Kingdom map</button><button class="b" data-go="play" data-arg="${r.idx}">Play again</button>${r.idx + 1 < LEVELS.length ? `<button class="b primary" data-primary data-go="play" data-arg="${r.idx + 1}">Next world &#9654;</button>` : ''}</div>`);
+    ${nudge.html}
+    <div class="btns"><button class="b" data-go="map">Kingdom map</button><button class="b" data-go="play" data-arg="${r.idx}">Play again</button>${nudge.btn}${r.idx + 1 < LEVELS.length ? `<button class="b primary" data-primary data-go="play" data-arg="${r.idx + 1}">Next world &#9654;</button>` : ''}</div>`);
 }
 function showEnding() {
-  SND.play('parade');
+  SND.play('parade'); if (tierNews) setTimeout(() => sayLine(TIERS[tierNews].name + ' unlocked!'), 1800);
+  setTimeout(() => { tierNews = 0; }, 0);
   show(`<h2>You saved the Crayon Kingdom!</h2>
     <p>Big Blotto has been scrubbed away, every friend is home, and all the colours are back where they belong.</p>
     <div class="march" aria-hidden="true">${PARADE.map((k, i) => `<img src="${SPR[k]}" style="animation-delay:${-i * 1.2}s" alt="">`).join('')}</div>
     <p>Starring characters drawn by hand by <b>Zoey</b>, Chief Illustrator of the Crayon Kingdom.${save.name ? ' Played by <b>' + esc(save.name) + '</b>.' : ''}</p>
-    ${save.mode === 'easy' ? '<p class="hand">Want a bigger challenge? Switch to Challenge mode in Settings and beat Big Blotto again.</p>' : ''}
+    ${tierNews ? `<div class="unlock"><img src="${SPR.owl}" alt=""><div><b style="font-family:'Lilita One',sans-serif;font-weight:400;font-size:calc(var(--u)*2.2)">${TIERS[tierNews].name} unlocked!</b><br>${TIERS[tierNews].blurb} Pick it at the top of the Kingdom Map.</div></div>` : save.mode === 'easy' ? '<p class="hand">Want a bigger challenge? Switch to Challenge mode in Settings and beat Big Blotto again.</p>' : ''}
     <div class="btns"><button class="b pink" data-go="stickers">Sticker book</button><button class="b primary" data-primary data-go="map">Back to the map</button></div>`);
 }
 
@@ -1987,6 +2092,10 @@ const GO = {
   play: b => { const i = +b.dataset.arg; if (i <= save.unlocked) startLevel(i); },
   pickHero: b => { const k = b.dataset.arg; if (!heroUnlocked(k)) { SND.sfx('out'); return; } save.hero = k; save.heroPicked = true; persist(); scr.querySelectorAll('.hero').forEach(x => x.classList.toggle('sel', x.dataset.arg === k)); },
   resume, restart: () => { if (L) startLevel(L.idx); },
+  pickTier: b => { const k = +b.dataset.arg; if (k > (save.tierMax || 0)) { SND.sfx('out'); toast('Locked', 'Beat Big Blotto on ' + TIERS[k - 1].name + ' to unlock ' + TIERS[k].name, 'inky'); return; } save.tier = k; persist(); SND.sfx('click'); showMap(); },
+  tierUp: b => { save.tier = Math.min(+b.dataset.t, save.tierMax || 0); persist(); startLevel(+b.dataset.arg); },
+  tSkill: b => { save.tier = (tierNo() + 1) % ((save.tierMax || 0) + 1); persist(); b.textContent = TIERS[tierNo()].name; },
+  unlockAll: b => { save.tierMax = 3; persist(); b.textContent = 'All unlocked'; b.disabled = true; },
   juke: b => showJukebox(b.dataset.arg),
   tVoice: b => { const order = ['heart', 'bella', 'michael', 'puck', 'browser']; save.voice = order[(order.indexOf(save.voice) + 1) % order.length]; persist(); b.textContent = voiceLabel(); const was = save.readAloud; save.readAloud = true; sayLine('Princess Poppy'); save.readAloud = was; },
   tRead: b => { save.readAloud = !save.readAloud; persist(); b.textContent = save.readAloud ? 'On' : 'Off'; },
