@@ -155,6 +155,10 @@
   .lvl .tm { display: flex; gap: calc(var(--u) * .35); }
   .lvl .tm i { width: calc(var(--u) * 1.1); height: calc(var(--u) * 1.1); border-radius: 50%; border: 2px solid var(--ink); background: #fff; }
   .lvl .tm i.on { background: var(--tc); }
+  .doors { display: flex; flex-wrap: wrap; gap: calc(var(--u) * .8); }
+  .door { display: flex; align-items: center; gap: calc(var(--u) * .8); text-align: left; cursor: pointer; font: inherit; color: var(--ink); background: #fff; border: calc(var(--u) * .3) solid var(--ink); border-left: calc(var(--u) * 1) solid var(--dc); border-radius: calc(var(--u) * 1); padding: calc(var(--u) * .5) calc(var(--u) * 1); box-shadow: 0 calc(var(--u) * .3) 0 var(--ink); }
+  .door b { font: 400 calc(var(--u) * 1.7) "Lilita One", sans-serif; display: block; } .door small { font-size: calc(var(--u) * 1.3); color: #5d5677; }
+  .door .dk { font-size: calc(var(--u) * 2.6); } .door.now { animation: bob 1.6s ease-in-out infinite; }
   .chip { display: inline-flex; align-items: center; gap: calc(var(--u) * .6); }
   .chip img { height: calc(var(--u) * 3.4); }
 
@@ -200,6 +204,19 @@
   @keyframes toastIn { from { transform: translateY(-120%) rotate(-4deg); opacity: 0; } }
   @keyframes toastOut { to { transform: translateY(-120%); opacity: 0; } }
   .pz-pic .emo { font-size: calc(var(--u) * 13); line-height: 1.1; display: block; text-align: center; font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
+  .mz { display: grid; grid-template-columns: minmax(0, 1.1fr) 1fr; gap: calc(var(--u) * 2); align-items: center; }
+  .mz-pic { background: #fff; border: calc(var(--u) * .35) solid var(--ink); border-radius: calc(var(--u) * 1.4); padding: calc(var(--u) * 1); }
+  .mrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: calc(var(--u) * .8); }
+  .mg { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(var(--u) * .3); max-width: calc(var(--u) * 26); padding: calc(var(--u) * .5); border: 2px dashed #d8cfb8; border-radius: calc(var(--u) * 1); }
+  .mg img { width: calc(var(--u) * 5.4); height: calc(var(--u) * 5.4); object-fit: contain; position: relative; }
+  .mg img.gone { opacity: .25; filter: grayscale(1); }
+  .mz.hint .mg { counter-reset: n; } .mz.hint .mg img { outline: 2px dotted #7a4bd6; border-radius: 50%; }
+  .vs { font: 400 calc(var(--u) * 3.4) "Lilita One", sans-serif; color: var(--berry); }
+  .mch { display: flex; flex-wrap: wrap; gap: calc(var(--u) * .9); }
+  .tile.num { width: auto; min-width: calc(var(--u) * 7); padding: 0 calc(var(--u) * 1); font-size: calc(var(--u) * 3.6); cursor: pointer; }
+  .tile.num.bad { background: #ffb3b3; opacity: .6; } .tile.num.right { background: #b8f0a8; }
+  .mz.win .mg img { animation: bob .6s ease-in-out infinite; }
+  @media (max-width: 700px) { .mz { grid-template-columns: 1fr; } }
   .pz { display: grid; grid-template-columns: calc(var(--u) * 24) 1fr; gap: calc(var(--u) * 2.4); align-items: center; }
   .pz-pic { display: grid; gap: calc(var(--u) * 1); justify-items: center; background: #fff; border: calc(var(--u) * .35) solid var(--ink); border-radius: calc(var(--u) * 1.6); padding: calc(var(--u) * 1.2); transform: rotate(-2deg); }
   .pz-pic img { width: 100%; height: calc(var(--u) * 18); object-fit: contain; animation: bob 2.4s ease-in-out infinite; }
@@ -273,13 +290,13 @@ let usedTouch = false;
 const SAVE_KEY = 'crayonKingdom.v1';
 const defSave = () => ({ name: '', mode: 'easy', hero: 'princess2', heroPicked: false, unlocked: 0, levels: {},
   totals: { crayons: 0, stomps: 0, bridges: 0, zaps: 0, words: 0 }, wordsDone: [], rides: {}, stickers: {}, heroesCleared: {}, friends: {}, flags: {},
-  music: true, sfx: true, touch: 'auto', song: 'world', voice: 'heart', readAloud: true, tier: 0, tierMax: 0, medals: {}, v: 2 });
+  music: true, sfx: true, touch: 'auto', song: 'world', voice: 'heart', readAloud: true, tier: 0, tierMax: 0, medals: {}, seasons: {}, v: 2 });
 let save = defSave();
 try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s) { save = Object.assign(defSave(), s); save.totals = Object.assign(defSave().totals, s.totals); save.flags = s.flags || {};
     if (!s.v) { const lv = save.levels; if (lv[4]) { lv[5] = lv[4]; delete lv[4]; } const md = save.medals || {}; if (md[4] !== undefined) { md[5] = md[4]; delete md[4]; } save.medals = md; if (save.unlocked >= 4) save.unlocked = 5; save.v = 2; }
     if (!['heart', 'bella', 'emma', 'michael', 'puck', 'george'].includes(save.voice)) save.voice = 'heart'; } } catch (e) { /* storage unavailable: play without saving */ }
 if (save.flags.boss) save.tierMax = Math.max(save.tierMax || 0, 1);
-save.tier = Math.min(save.tier || 0, save.tierMax || 0); save.medals = save.medals || {};
+save.tier = Math.min(save.tier || 0, save.tierMax || 0); save.medals = save.medals || {}; save.seasons = save.seasons || {};
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* ignore */ } }
 const countStars = s => Object.values(s.levels).reduce((a, l) => a + (l.stars || []).filter(Boolean).length, 0);
 
@@ -325,6 +342,9 @@ const STICKERS = [
   ['rides3', 'Ride Them All', 'Ride the unicorn, the robot and the magic carpet', 'unicorn', s => ['unicorn', 'robot', 'carpet'].every(k => s.rides && s.rides[k])],
   ['pops', 'Balloon Popper', 'Pop 10 balloons', 'carpet', s => (s.totals.pops || 0) >= 10],
   ['fives', 'Crowd Pleaser', 'High-five 8 cheering friends', 'dragon', s => (s.totals.fives || 0) >= 8],
+  ['math10', 'Number Whiz', 'Solve 10 number puzzles', 'owl', s => (s.totals.math || 0) >= 10],
+  ['season1', 'Secret Door Finder', 'Finish a secret seasonal level', 'owl', s => Object.values(s.seasons || {}).some(x => x.done)],
+  ['season4', 'All Four Seasons', 'Finish the spring, summer, autumn and winter secret levels', 'flyer', s => ['spring', 'summer', 'autumn', 'winter'].every(k => s.seasons && s.seasons[k] && s.seasons[k].done)],
   ['nameAll', 'Name Collector', 'Find every letter of your name in one world', 'princess2', s => !!s.flags.nameAll],
   ['chests', 'Treasure Hunter', 'Open 5 treasure chests', 'king', s => (s.totals.chests || 0) >= 5],
   ['blasts', 'Human Cannonball', 'Blast out of 5 crayon cannons', 'rocket', s => (s.totals.blasts || 0) >= 5],
@@ -558,6 +578,10 @@ const WORLDS = {
   rainbow: { sky: ['#c3a0ff', '#ffe0f4'], top: 'rainbow', topDark: '#5a2fa8', body: '#7a4bd6', hatch: '#4d2a94', hill1: '#ffa6d9', hill2: '#8fd3ff', art: 'rainbow' },
   parade: { sky: ['#6db8ff', '#e2f5ff'], top: '#27a383', topDark: '#146b56', body: '#1f6f5c', hatch: '#0f4a3c', hill1: '#56c49c', hill2: '#2f9c7a', art: 'friends' },
   sky: { sky: ['#5aa9ff', '#fff4fd'], top: '#ffffff', topDark: '#9dbcf0', body: '#dde8ff', hatch: '#a8bde6', hill1: '#ffffff', hill2: '#dbe9ff', art: 'rainbow' },
+  autumn: { sky: ['#f7b267', '#fde6c8'], top: '#e76f51', topDark: '#a4432a', body: '#8a5a2b', hatch: '#5e3b1a', hill1: '#f4a261', hill2: '#e9c46a', art: 'meadow', weather: 'leaves' },
+  winter: { sky: ['#9ecbff', '#f4f9ff'], top: '#ffffff', topDark: '#b7d3f2', body: '#7b8fb0', hatch: '#56688a', hill1: '#eef5ff', hill2: '#cfe2fb', art: 'meadow', weather: 'snow' },
+  spring: { sky: ['#a8e0ff', '#fff0f7'], top: '#7bd13a', topDark: '#4f8a14', body: '#a0693a', hatch: '#6e4323', hill1: '#ffc2e1', hill2: '#b9f0a0', art: 'meadow', weather: 'petals' },
+  summer: { sky: ['#4fb3ff', '#fff6c2'], top: '#ffd23f', topDark: '#d9a21b', body: '#eaa446', hatch: '#b8741d', hill1: '#ffe27a', hill2: '#7fd6c8', art: 'ladybird', weather: 'sun' },
   finale: { sky: ['#ff9ecf', '#ffe9b0'], top: '#ff5fa2', topDark: '#b8286b', body: '#6b4bb8', hatch: '#46307d', hill1: '#ffb3d9', hill2: '#c9a6ff', art: 'friends' },
   splat: { sky: ['#241c3a', '#5a3b7d'], top: '#ff5fa2', topDark: '#b8286b', body: '#35264f', hatch: '#1e1530', hill1: '#4a3570', hill2: '#3a2858', art: 'rainbow', dark: true },
 };
@@ -616,6 +640,12 @@ function worldTiles(key) {
       g.font = '800 14px ' + BODY; g.fillText('1', 40, 50); g.fillText('3', 84, 50); g.fillText('3', 62, 86);
       return c;
     })(),
+    num: (() => {
+      const c = mk(), g = c.getContext('2d'); g.fillStyle = '#cdeefd'; g.fillRect(0, 0, S, S); hatch(g, '#7cc4e8', 16, 22, -.8, .45); outline(g);
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '44px ' + DISPLAY;
+      g.fillStyle = '#e63946'; g.fillText('1', 24, 50); g.fillStyle = '#2f6fd1'; g.fillText('2', 48, 50); g.fillStyle = '#5a9e1c'; g.fillText('3', 72, 50);
+      return c;
+    })(),
   };
   TILE_CACHE[key] = t; return t;
 }
@@ -649,7 +679,7 @@ const LEVELS = [
     b.ground(26, 29, 9); b.crayons(26, 8, 4);
     b.crayons(31, 8, 3);
     b.ground(34, 62);
-    b.e('friend', 39, 8, { who: 'piggy' }); b.e('check', 43, 10); b.put(46, 7, 'W'); b.e('sign', 47, 10, { key: 'word' });
+    b.e('friend', 39, 8, { who: 'piggy' }); b.e('check', 43, 10); b.put(46, 7, 'W'); b.put(28, 5, 'N'); b.e('sign', 47, 10, { key: 'word' });
     b.e('squig', 49, 8);
     b.row(52, 8, 4, '-'); b.crayons(52, 7, 4); b.e('star', 54, 4, { i: 0 });
     b.crayons(57, 10, 3); b.e('box', 59, 10); b.e('sign', 61, 10, { key: 'draw' });
@@ -755,7 +785,7 @@ const LEVELS = [
     b.row(19, 31, 4, 'c'); b.crayons(19, 30, 3);
     b.row(24, 29, 4, 'c'); b.crayons(24, 28, 3);
     b.e('mover', 29, 29, { x2: 29, y2: 19 }); b.e('star', 30, 15, { i: 2 });
-    b.row(33, 19, 7, 'c'); b.e('veh', 33, 18, { kind: 'jetpack' }); b.e('check', 35, 18); b.put(36, 15, '?'); b.e('puff', 38, 18);
+    b.row(33, 19, 7, 'c'); b.put(37, 15, 'N'); b.e('veh', 33, 18, { kind: 'jetpack' }); b.e('check', 35, 18); b.put(36, 15, '?'); b.e('puff', 38, 18);
     b.row(40, 14, 6, 'c'); b.crayons(41, 13, 3); b.e('blot', 44, 13); b.e('squig', 43, 10);
     b.row(47, 12, 4, 'c'); b.crayons(47, 11, 3); b.put(49, 8, 'W');
     b.row(52, 10, 4, 'c'); b.crayons(52, 9, 3); b.e('star', 54, 7, { i: 1 });
@@ -794,7 +824,7 @@ const LEVELS = [
     b.e('squig', 178, 12); b.e('check', 181, S); fans(['fairy', 'princess2'], 184, 2);
     // 4. Robot Workshop
     b.ground(190, 255); b.e('zone', 192, S, { name: 'Robot Workshop' }); b.e('check', 191, S); b.e('veh', 196, S, { kind: 'robot' });
-    b.row(200, 12, 6, '='); b.put(202, 12, '?'); b.put(204, 12, 'W');
+    b.row(200, 12, 6, '='); b.put(202, 12, '?'); b.put(204, 12, 'W'); b.put(201, 12, 'N');
     for (let k = 0; k < 6; k++) b.e('blot', 207 + k * 3, S); b.e('squig', 214, 11);
     b.e('spring', 226, S); b.row(224, 9, 5, '-'); b.crayons(224, 8, 5); b.e('berry', 226, 7);
     b.e('check', 230, S); fans(['elf2', 'rainbowpig', 'wolf'], 232, 2);
@@ -807,12 +837,28 @@ const LEVELS = [
     fans(['dragon', 'wizard'], 299, 2);
     // 6. Blotto's Arena: the gate at 304 slams shut when he wakes
     b.e('zone', 303, S, { name: "Blotto's Arena" }); b.e('check', 305, S); b.block(329, 329, 0, 15);
-    b.row(308, 12, 3, '-'); b.row(323, 12, 3, '-'); b.row(315, 9, 4, '-');
+    b.row(308, 12, 3, '-'); b.row(323, 12, 3, '-'); b.row(315, 9, 4, '-'); b.put(309, 8, 'N'); b.put(316, 5, 'N');
     b.crayons(309, 11, 2); b.crayons(324, 11, 2); b.crayons(316, 8, 2);
     b.e('box', 307, S); b.e('veh', 311, S, { kind: 'jetpack' }); b.e('boss', 320, S, { wake: 306 });
   } },
 ];
 
+const SEASON_NAMES = { spring: 'Spring', summer: 'Summer', autumn: 'Autumn', winter: 'Winter' };
+const SEASON_LINES = { spring: 'A secret spring door! Flowers are popping up everywhere. Collect the crayons and find the flag!',
+  summer: 'A secret summer door! The sun is out. Collect the crayons and find the flag!',
+  autumn: 'A secret autumn door! The leaves are falling. Collect the crayons and find the flag!',
+  winter: 'A secret winter door! Snow is falling. Collect the crayons and find the flag!' };
+const SEASON_DEFS = ['spring', 'summer', 'autumn', 'winter'].map((k, n) => ({
+  name: 'Secret ' + SEASON_NAMES[k] + ' Level', short: 'A seasonal surprise', world: k, song: ['j6', 'j2', 'j4', 'j8'][n], art: null, thumb: ['chick', 'ladybug', 'owl', 'lamb'][n], w: 32, season: k,
+  build(b) {
+    b.ground(0, 31);
+    b.e('npc', 3, 10, { who: 'wizard', text: SEASON_LINES[k].replace('!', ', %N!'), speak: SEASON_LINES[k] });
+    b.crayons(7, 10, 5); b.e('star', 12, 8, { i: 0 }); b.put(15, 7, '?'); b.e('star', 18, 8, { i: 1 }); b.put(21, 7, 'W'); b.e('star', 24, 8, { i: 2 }); b.e('flag', 28, 10);
+  },
+}));
+const SEASON_BASE = 100;
+const levelDef = i => i >= SEASON_BASE ? SEASON_DEFS[i - SEASON_BASE] : LEVELS[i];
+function currentSeason() { const m = new Date().getMonth(); return m < 2 || m === 11 ? 'winter' : m < 5 ? 'spring' : m < 8 ? 'summer' : 'autumn'; }
 const SIGNS = {
   move: { k: 'Use the arrow keys (or A and D) to run. Press SPACE or UP to jump!', t: 'Hold the arrow buttons to run. Tap JUMP to jump!' },
   blocks: { k: 'Jump and bonk the ? blocks from below. Some hide a Super Strawberry!', t: 'Jump and bonk the ? blocks from below. Some hide a Super Strawberry!' },
@@ -829,7 +875,8 @@ const keyWords = s => s.replace(/%P/g, touchMode() ? 'the star button' : 'X').re
 function buildLevel(def, idx) {
   const tn = def.boss ? 0 : tierNo(), TR = TIERS[tn], cap = def.w + TR.ext + 40, R = def.rows || ROWS;
   const g = [...Array(R)].map(() => Array(cap).fill(' ')); const ents = [];
-  const set = (x, y, c) => { if (x >= 0 && x < cap && y >= 0 && y < R) g[y][x] = c; };
+  // the grid grows as the longer-world generator adds sections, so nothing past the first estimate is lost
+  const set = (x, y, c) => { if (x < 0 || y < 0 || y >= R) return; if (x >= g[0].length) for (const row of g) while (row.length <= x + 1) row.push(' '); g[y][x] = c; };
   const b = {
     ground(x0, x1, top = R - 2) { for (let x = x0; x <= x1; x++) for (let y = top; y < R; y++) set(x, y, '#'); },
     block(x0, x1, y0, y1, ch = '#') { for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) set(x, y, ch); },
@@ -905,19 +952,20 @@ function extendLevel(b, ents, def, tn, rng) {
     rainbow(x) { b.ground(x, x + 5); b.e('switch', x + 3, 10, { bx0: x + 6, bx1: x + 14, by: 11 }); b.crayons(x + 7, 9, 7); b.ground(x + 15, x + 19); return 20; },
     // bonus ring: bounce through it and a rush of crayons pours out ahead
     ring(x) { b.ground(x, x + 17); b.e('spring', x + 3, 10); b.e('ring', x + 3, 4); b.e('hopper', x + 13, 10); return 18; },
+    math(x) { b.ground(x, x + 8); b.put(x + 4, 7, 'N'); b.crayons(x + 1, 10, 2); return 9; },
     word(x) { b.ground(x, x + 8); b.put(x + 4, 7, 'W'); b.crayons(x + 1, 10, 2); return 9; },
   };
   const pool = ['hop', 'steps', 'march', 'ledge', 'spring', 'hop', 'march', 'puff', 'puff'];
   if (def.world === 'rainbow' || tn >= 2) pool.push('cloud');
   if (def.world === 'sand' || def.world === 'parade' || tn >= 2) pool.push('ink');
   if (tn >= 2) pool.push('boo');
-  const must = ['cannon', 'crumble', 'treasure', 'rainbow', 'ring', 'word'].sort(() => rng() - .5);
+  const must = ['cannon', 'crumble', 'treasure', 'rainbow', 'ring', 'word', 'math'].sort(() => rng() - .5);
   let x = def.w, lastK = '', n = 0;
   b.ground(fx, def.w + 1);
   b.e('npc', fx + 3, 10, { who: 'wizard', text: (tn ? TIERS[tn].name + ' path, %N! ' : 'Keep going, %N! ') + 'The flag has moved further on. Adventure awaits!', speak: 'The flag has moved further on. Keep going!' });
   while (x < def.w + TIERS[tn].ext || must.length) {
     let k = n % 2 === 0 && must.length ? must.shift() : pool[Math.floor(rng() * pool.length)];
-    if (k === lastK && !['cannon', 'crumble', 'treasure', 'rainbow', 'ring', 'word'].includes(k)) k = k === 'march' ? 'hop' : 'march';
+    if (k === lastK && !['cannon', 'crumble', 'treasure', 'rainbow', 'ring', 'word', 'math'].includes(k)) k = k === 'march' ? 'hop' : 'march';
     x += C[k](x); lastK = k; n++;
     if (n % 2 === 0) b.e('check', x - 2, 10);
   }
@@ -968,7 +1016,7 @@ function makeEnt(d, i) {
 }
 
 function startLevel(i, msg) {
-  const def = LEVELS[i]; const b = buildLevel(def, i);
+  const def = levelDef(i); const b = buildLevel(def, i);
   L = { idx: i, def, wk: def.world, Wd: WORLDS[def.world], grid: b.grid, cols: b.cols, rows: b.rows, tiles: worldTiles(def.world), hills: worldHills(def.world),
     bump: {}, ents: [], parts: [], strokes: [], strokeN: 0, cam: { x: 0, y: b.rows * T - H }, ammo: 5, got: 0, total: 0, stars: [false, false, false],
     prevStars: (save.levels[i] && save.levels[i].stars) || [], friends: [], friendTotal: 0, berries: 0, need: hard() ? 3 : 2, time: 0, hurt: false,
@@ -1010,7 +1058,7 @@ function setBig(v) {
 }
 
 // ================= tiles & collision =================
-const isSolid = c => c === '#' || c === '=' || c === '?' || c === '!' || c === 'U' || c === 'W' || c === 'r';
+const isSolid = c => c === '#' || c === '=' || c === '?' || c === '!' || c === 'U' || c === 'W' || c === 'r' || c === 'N';
 function tileAt(x, y) { if (y < 0 || y >= L.rows) return ' '; if (x < 0 || x >= L.cols) return '#'; return L.grid[y][x]; }
 
 function tileCollideX(b, dx) {
@@ -1090,6 +1138,7 @@ function bumpTile(tx, ty, fromPound) {
   if (c === '?') { L.grid[ty][tx] = 'U'; L.bump[key] = .2; L.ammo += 3; save.totals.crayons += 3; SND.sfx('block'); for (let i = 0; i < 3; i++) L.parts.push({ kind: 'crayon', x: tx * T + 24, y: ty * T, vx: rand(-90, 90), vy: rand(-520, -380), g: 1500, life: .7, col: COLORS[(tx + i) % 7], rot: rand(0, 6) }); floatText('+3 crayons', tx * T + 24, ty * T - 10, '#221d38'); }
   else if (c === '!') { L.grid[ty][tx] = 'U'; L.bump[key] = .2; L.ents.push({ type: 'berry', x: tx * T + 8, y: ty * T - 34, w: 32, h: 32, vx: 90, vy: -250, still: false, grace: .3 }); SND.sfx('power'); }
   else if (c === 'W') { L.grid[ty][tx] = 'U'; L.bump[key] = .2; openWord(); }
+  else if (c === 'N') { L.grid[ty][tx] = 'U'; L.bump[key] = .2; openMath(); }
   else if (c === '=') { if (P.big || fromPound) breakBrick(tx, ty); else { L.bump[key] = .2; SND.sfx('bump'); } }
   else if (c !== 'U') SND.sfx('bump');
   else SND.sfx('bump');
@@ -1385,7 +1434,7 @@ function rideVehicle(dt, dir) {
   if (P.y > L.rows * T + 80) { P.veh = null; fall(); }
   L.hist.push({ x: P.x + P.w / 2, y: P.y + P.h, f: P.facing }); if (L.hist.length > 220) L.hist.shift();
 }
-// Buttons the robot lands with a STOMP that squashes nearby scribbles (and bonks Big Blotto if he's close)
+// the robot ride lands with a STOMP that squashes nearby scribbles (and bonks Big Blotto if he's close)
 function robotStomp() {
   const P = L.p; L.shake = 10; SND.sfx('pound');
   for (let k = 0; k < 14; k++) L.parts.push({ kind: 'dot', x: P.x + P.w / 2 + rand(-60, 60), y: P.y + P.h, vx: rand(-220, 220), vy: rand(-260, -60), g: 900, life: .6, col: '#c9b8a0', s: 7 });
@@ -1408,7 +1457,7 @@ function poundImpact() {
   for (let i = 0; i < 12; i++) L.parts.push({ kind: 'dot', x: fx + rand(-30, 30), y: fy - 4, vx: rand(-320, 320), vy: rand(-260, -60), g: 1200, life: .5, col: '#f5ecd8', s: rand(5, 9) });
   for (const e of L.ents) if ((e.type === 'blot' || e.type === 'mini' || e.type === 'squig' || (e.type === 'boo' && !e.shy)) && !e.dead && Math.abs(e.x + e.w / 2 - fx) < 170 && Math.abs(e.y + e.h - fy) < 90) squash(e, 'stomp');
   const ty = Math.floor((fy + 2) / T);
-  for (let tx = Math.floor(P.x / T); tx <= Math.floor((P.x + P.w - 1) / T); tx++) { const c = tileAt(tx, ty); if (c === '=' || c === '?' || c === '!' || c === 'W') bumpTile(tx, ty, true); }
+  for (let tx = Math.floor(P.x / T); tx <= Math.floor((P.x + P.w - 1) / T); tx++) { const c = tileAt(tx, ty); if (c === '=' || c === '?' || c === '!' || c === 'W' || c === 'N') bumpTile(tx, ty, true); }
 }
 function dashBreak() {
   const P = L.p, tx = Math.floor((P.facing > 0 ? P.x + P.w + 10 : P.x - 10) / T);
@@ -1619,7 +1668,16 @@ function levelClear() {
   L.done = true; L.doneT = 2.6; SND.play('clear'); if (L.boss) sayToPlayer('You saved the Crayon Kingdom!'); else sayLine('Level clear!'); confetti(L.p.x + 15, L.p.y, 60);
   if (drawing) endDraw();
 }
+function finishSeason() {
+  const k = L.def.season, prev = save.seasons[k] || {};
+  save.seasons[k] = { seen: true, done: true, stars: [0, 1, 2].map(n => !!(prev.stars && prev.stars[n]) || L.stars[n]) };
+  save.heroesCleared[save.hero] = true; persist();
+  const newOnes = checkStickers();
+  const r = { idx: L.idx, name: L.def.name, got: L.got, total: L.total, pct: L.total ? Math.min(100, Math.round(L.got / L.total * 100)) : 100, stars: L.stars, friends: [], friendTotal: 0, time: L.time, words: L.words, hurt: L.hurt, snout: false, newOnes, boss: false };
+  mode = 'menu'; L = null; updateChrome(); showResults(r);
+}
 function finishLevel() {
+  if (L.def.season) { finishSeason(); return; }
   const i = L.idx, prev = save.levels[i] || {};
   const stars = [0, 1, 2].map(k => !!(prev.stars && prev.stars[k]) || L.stars[k]);
   const pct = L.total ? Math.min(100, Math.round(L.got / L.total * 100)) : 100;
@@ -1695,7 +1753,7 @@ function sayToPlayer(line) {
 // ================= word puzzle =================
 let PZ = null, pzDrag = null;
 function pickWord() {
-  const tn = tierNo(), TR = TIERS[tn], maxLen = tn ? TR.hi : (L ? [4, 5, 6, 8, 8, 8][L.idx] : 8);
+  const tn = tierNo(), TR = TIERS[tn], maxLen = tn ? TR.hi : (L ? ([4, 5, 6, 8, 8, 8][L.idx] || 6) : 8);
   const fits = w => w[0].length >= TR.lo && w[0].length <= maxLen;
   const done = save.wordsDone || [];
   let pool = WORDS.filter(w => fits(w) && !done.includes(w[0]));
@@ -1800,6 +1858,10 @@ function tileUp(e) {
   afterMove();
 }
 function puzzleKey(e) {
+  if (MQ) {
+    if (MQ.done) { if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); closeMath(true); } return; }
+    const b = [...scr.querySelectorAll('#mzCh .tile')].find(x => x.textContent === e.key && !x.disabled); if (b) b.click(); return;
+  }
   if (!PZ) return;
   if (PZ.done) { if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); closeWord(true); } return; }
   const k = e.key.toUpperCase();
@@ -1852,6 +1914,86 @@ function closeWord(won) {
   if (!L) return;
   mode = 'play'; hideScreen(); last = performance.now();
   if (P) floatText(won ? 'Great spelling!' : 'Maybe next time!', P.x + P.w / 2, P.y - 20, won ? '#2f6fd1' : '#7a4bd6');
+}
+
+// ================= number puzzle =================
+const MATH_THINGS = ['ladybug', 'berry', 'chick', 'owl', 'piggy', 'puppy', 'lamb', 'cat', 'rabbit', 'car', 'rocket', 'unicorn', 'robot', 'dragon'];
+const MATH_NAMES = { ladybug: ['ladybug', 'ladybugs'], berry: ['strawberry', 'strawberries'], chick: ['chick', 'chicks'], owl: ['owl', 'owls'], piggy: ['pig', 'pigs'],
+  puppy: ['puppy', 'puppies'], lamb: ['lamb', 'lambs'], cat: ['cat', 'cats'], rabbit: ['bunny', 'bunnies'], car: ['car', 'cars'], rocket: ['rocket', 'rockets'],
+  unicorn: ['unicorn', 'unicorns'], robot: ['robot', 'robots'], dragon: ['dragon', 'dragons'] };
+let MQ = null;
+const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+function makeMath() {
+  const tn = tierNo(), k = MATH_THINGS[Math.floor(Math.random() * MATH_THINGS.length)], nm = MATH_NAMES[k], pl = n => n === 1 ? nm[0] : nm[1];
+  if (tn === 0) {
+    if (Math.random() < .7) { const n = rint(1, 5); return { kind: 'count', say: 'How many can you count?', q: `How many ${nm[1]}?`, groups: [[k, n]], ans: n }; }
+    let a = rint(1, 5), b = rint(1, 5); while (b === a) b = rint(1, 5);
+    return { kind: 'more', say: 'Which group has more?', q: `Which group has more ${nm[1]}?`, groups: [[k, a], [k, b]], ans: a > b ? 0 : 1, choices: ['Left', 'Right'] };
+  }
+  if (tn === 1) { const a = rint(1, 5), b = rint(1, 5); return { kind: 'add', say: 'Add them together!', q: `${a} ${pl(a)} and ${b} more. How many altogether?`, groups: [[k, a], [k, b]], sign: '+', ans: a + b }; }
+  if (tn === 2) {
+    if (Math.random() < .5) { const a = rint(3, 12), b = rint(2, 8); return { kind: 'add', say: 'Add them together!', q: `${a} + ${b} = ?`, groups: [[k, Math.min(a, 12)], [k, Math.min(b, 8)]], sign: '+', ans: a + b }; }
+    const a = rint(5, 15), b = rint(1, a - 1); return { kind: 'sub', say: 'Take some away!', q: `Gus had ${a} ${pl(a)}. ${b} went away. How many are left?`, groups: [[k, a]], gone: b, ans: a - b };
+  }
+  if (Math.random() < .5) { const g = rint(2, 5), n = rint(2, 5); return { kind: 'groups', say: 'How many altogether?', q: `${g} groups of ${n} ${nm[1]}. How many altogether?`, groups: Array.from({ length: g }, () => [k, n]), ans: g * n }; }
+  const a = rint(8, 18), b = rint(4, 12); return { kind: 'add', say: 'Add them together!', q: `${a} + ${b} = ?`, groups: [[k, Math.min(a, 12)], [k, Math.min(b, 12)]], sign: '+', ans: a + b, big: true };
+}
+function mathChoices(q) {
+  if (q.choices) return q.choices.map((t, i) => ({ t, v: i }));
+  const set = new Set([q.ans]); let tries = 0;
+  while (set.size < 4 && tries++ < 50) { const d = q.ans + rint(-3, 3); if (d >= 0 && d !== q.ans) set.add(d); }
+  return [...set].sort((a, b) => a - b).map(v => ({ t: String(v), v }));
+}
+function groupHTML(q) {
+  const one = (k, n, gi) => `<div class="mg">${Array.from({ length: n }, (_, i) => `<img src="${SPR[k]}" alt="" class="${q.gone && i >= n - q.gone ? 'gone' : ''}" data-i="${i + 1}">`).join('')}</div>`;
+  if (q.kind === 'more') return `<div class="mrow">${one(q.groups[0][0], q.groups[0][1])}<b class="vs">or</b>${one(q.groups[1][0], q.groups[1][1])}</div>`;
+  return `<div class="mrow">${q.groups.map(([k, n], gi) => one(k, n, gi)).join(q.sign ? `<b class="vs">${q.sign}</b>` : '')}</div>`;
+}
+function openMath() {
+  if (!L || L.done) return;
+  const q = makeMath(); MQ = { q, tries: 0, done: false };
+  if (drawing) endDraw();
+  for (const k of ['left', 'right', 'down', 'jumpHeld', 'actHeld']) inp[k] = false;
+  mode = 'puzzle'; SND.sfx('pop'); sayLine(q.say);
+  show(`<div class="mz">
+      <div class="mz-pic">${groupHTML(q)}</div>
+      <div class="pz-main">
+        <h2>Number puzzle!</h2>
+        <p class="hand" style="font-size:calc(var(--u)*2.2)">${esc(q.q)}</p>
+        <div class="mch" id="mzCh">${mathChoices(q).map(c => `<button class="tile num" data-v="${c.v}">${esc(c.t)}</button>`).join('')}</div>
+        <p class="pz-msg" id="mzMsg" aria-live="polite"></p>
+        <div class="btns" id="mzBtns"><button class="b" id="mzSkip">Skip</button><button class="b pink" id="mzHint">Hint</button></div>
+      </div>
+    </div>`, 'puzzle');
+  $('#mzSkip').addEventListener('click', () => { SND.sfx('click'); closeMath(false); });
+  $('#mzHint').addEventListener('click', () => { SND.sfx('click'); scr.querySelector('.mz').classList.add('hint'); $('#mzMsg').textContent = q.kind === 'more' ? 'Count each group. The bigger number wins!' : q.kind === 'sub' ? 'Count only the pictures that are not faded.' : 'Count every picture, one at a time. The numbers will help!'; });
+  scr.querySelectorAll('#mzCh .tile').forEach(b => b.addEventListener('click', () => answerMath(+b.dataset.v, b)));
+}
+function answerMath(v, btn) {
+  if (!MQ || MQ.done) return;
+  const q = MQ.q;
+  if (q.kind !== 'more') { const n = String(v); if (+n <= 30) sayLine(n); }
+  if (v !== q.ans) { MQ.tries++; SND.sfx('out'); btn.classList.add('bad'); btn.disabled = true; $('#mzMsg').textContent = MQ.tries >= 2 ? 'Keep going! Tap Hint for help.' : 'Not quite. Try again!'; return; }
+  MQ.done = true; const prize = 3 + tierNo() * 2;
+  L.ammo += prize; save.totals.crayons += prize; save.totals.math = (save.totals.math || 0) + 1; persist();
+  btn.classList.add('right'); SND.sfx('star'); setTimeout(() => sayLine('Great counting!'), 700);
+  scr.querySelector('.mz').classList.add('win', 'hint');
+  $('#mzMsg').textContent = `Yes! The answer is ${q.kind === 'more' ? (q.ans ? 'the right group' : 'the left group') : q.ans}. +${prize} crayons!`;
+  $('#mzBtns').innerHTML = '<button class="b primary" id="mzGo" data-primary>Keep playing</button>';
+  $('#mzGo').addEventListener('click', () => { SND.sfx('click'); closeMath(true); });
+  try { $('#mzGo').focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  checkStickers();
+}
+function closeMath(won) {
+  if (!MQ) return; MQ = null; if (!L) return;
+  const P = L.p; mode = 'play'; hideScreen(); last = performance.now();
+  // in Big Blotto's arena a solved puzzle fires a crayon spell at him
+  const bs = L.boss;
+  if (won && bs && !bs.asleep && !bs.defeated) {
+    for (let k = 0; k < 24; k++) L.parts.push({ kind: 'star', x: P.x + P.w / 2 + (bs.x + bs.w / 2 - P.x) * k / 24, y: P.y + (bs.y + 60 - P.y) * k / 24, vx: rand(-40, 40), vy: rand(-40, 40), g: 0, life: .5 + k * .02, col: RAINBOW[k % 7], s: 7 });
+    bs.inv = 0; hitBoss(bs); floatText('Crayon spell!', bs.x + bs.w / 2, bs.y - 20, '#d9337f'); sayLine('Great counting!'); return;
+  }
+  if (P) floatText(won ? 'Great counting!' : 'Maybe next time!', P.x + P.w / 2, P.y - 20, won ? '#2f6fd1' : '#7a4bd6');
 }
 
 // ================= stickers =================
@@ -1964,6 +2106,7 @@ function drawTiles() {
     if (c === '#') { const k = L.kind[y][x]; if (!k) continue; ctx.drawImage(k.img, px, py, T, T); if (k.l || k.r) { ctx.beginPath(); if (k.l) { ctx.moveTo(px + 2, py + 2); ctx.lineTo(px + 1, py + T); } if (k.r) { ctx.moveTo(px + T - 2, py + 2); ctx.lineTo(px + T - 1, py + T); } ctx.stroke(); } }
     else if (c === '=') ctx.drawImage(t.brick, px, py + oy, T, T);
     else if (c === '?' || c === '!') { ctx.drawImage(t.q, px, py + oy, T, T); ctx.save(); ctx.globalAlpha = .25 + .2 * Math.sin(gt * 4 + x); ctx.fillStyle = '#fff'; ctx.fillRect(px + 4, py + oy + 4, T - 8, T - 8); ctx.restore(); }
+    else if (c === 'N') { ctx.drawImage(t.num, px, py + oy, T, T); ctx.save(); ctx.globalAlpha = .2 + .2 * Math.sin(gt * 5 + x); ctx.fillStyle = '#fff'; ctx.fillRect(px + 4, py + oy + 4, T - 8, T - 8); ctx.restore(); }
     else if (c === 'W') { ctx.drawImage(t.word, px, py + oy, T, T); ctx.save(); ctx.globalAlpha = .2 + .2 * Math.sin(gt * 5 + x); ctx.fillStyle = '#fff'; ctx.fillRect(px + 4, py + oy + 4, T - 8, T - 8); ctx.restore(); }
     else if (c === 'U') ctx.drawImage(t.used, px, py + oy, T, T);
     else if (c === '-') ctx.drawImage(t.plank, px, py, T, 20);
@@ -2275,7 +2418,7 @@ function drawHUD() {
   }
   if (L.intro > 0) {
     const a = Math.min(1, L.intro * 1.5); ctx.globalAlpha = a;
-    txt('World ' + (L.idx + 1) + (tierNo() ? '  |  ' + TIERS[tierNo()].name : ''), W / 2, H / 2 - 70, 28, '#fff', 'center', DISPLAY, '#221d38', 7);
+    txt((L.def.season ? 'Secret level' : 'World ' + (L.idx + 1)) + (tierNo() ? '  |  ' + TIERS[tierNo()].name : ''), W / 2, H / 2 - 70, 28, '#fff', 'center', DISPLAY, '#221d38', 7);
     txt(L.def.name, W / 2, H / 2 - 28, 54, '#ffd23f', 'center', DISPLAY, '#221d38', 10);
     txt(HEROES[P.hero].name + ': ' + keyWords(HEROES[P.hero].hint), W / 2, H / 2 + 22, 20, '#fff', 'center', BODY, '#221d38', 6);
     ctx.globalAlpha = 1;
@@ -2310,11 +2453,30 @@ function drawFinaleFx(camx) {
   if (tense) { ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(30,20,50,.38)'; ctx.fillRect(0, 0, W, H); }
   ctx.restore();
 }
+function drawWeather(kind, camx) {
+  ctx.save();
+  if (kind === 'sun') {
+    ctx.globalAlpha = .18 + .06 * Math.sin(gt); ctx.fillStyle = '#fff3a8';
+    for (let k = 0; k < 6; k++) { ctx.beginPath(); ctx.moveTo(W - 60, 40); ctx.arc(W - 60, 40, 700, 2.2 + k * .22 + Math.sin(gt * .3) * .05, 2.3 + k * .22 + Math.sin(gt * .3) * .05); ctx.closePath(); ctx.fill(); }
+  } else {
+    const n = kind === 'snow' ? 70 : 34, col = kind === 'snow' ? ['#ffffff'] : kind === 'leaves' ? ['#e76f51', '#f4a261', '#e9c46a', '#b5561f'] : ['#ffb3d9', '#ffffff', '#ffd6ec'];
+    for (let k = 0; k < n; k++) {
+      const sp = kind === 'snow' ? 40 + (k % 5) * 12 : 55 + (k % 4) * 15, x = mod(k * 137 - camx * .5 + Math.sin(gt * .8 + k) * 40, W + 40) - 20, y = mod(gt * sp + k * 97, H + 40) - 20;
+      ctx.globalAlpha = .85; ctx.fillStyle = col[k % col.length];
+      ctx.save(); ctx.translate(x, y); ctx.rotate(gt * (k % 2 ? 1.2 : -1) + k);
+      if (kind === 'snow') { ctx.beginPath(); ctx.arc(0, 0, 2 + (k % 3), 0, 7); ctx.fill(); }
+      else { ctx.beginPath(); ctx.ellipse(0, 0, kind === 'leaves' ? 7 : 5, kind === 'leaves' ? 4 : 3, 0, 0, 7); ctx.fill(); }
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
 function drawLevel() {
   const sh = L.shake > 0 ? L.shake : 0, ox = sh ? rand(-sh, sh) : 0, oy = sh ? rand(-sh, sh) : 0;
   const camx = Math.round(L.cam.x + ox), camy = Math.round(L.cam.y + oy);
   drawBackdrop(L.wk, camx, camy - (L.rows * T - H) + 84);
   if (L.def.fx) drawFinaleFx(camx);
+  if (L.Wd.weather) drawWeather(L.Wd.weather, camx);
   ctx.save(); ctx.translate(-camx, -camy); drawTiles(); ctx.restore();
   if (L.sat < .99) { ctx.save(); ctx.globalCompositeOperation = 'saturation'; ctx.globalAlpha = 1 - L.sat; ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
   ctx.save(); ctx.translate(-camx, -camy);
@@ -2429,6 +2591,14 @@ function showHeroes() {
       </button>`; }).join('')}</div>
     <div class="btns"><button class="b primary" data-primary data-go="map">Let's go!</button></div>`, 'heroes-panel');
 }
+function seasonDoors() {
+  const now = currentSeason();
+  if (!save.seasons[now] || !save.seasons[now].seen) { save.seasons[now] = Object.assign(save.seasons[now] || {}, { seen: true }); persist(); }
+  const keys = ['spring', 'summer', 'autumn', 'winter'].filter(k => save.seasons[k] && save.seasons[k].seen);
+  return `<div class="doors">${keys.map(k => { const n = ['spring', 'summer', 'autumn', 'winter'].indexOf(k), d = save.seasons[k];
+    return `<button class="door ${k === now ? 'now' : ''}" data-go="play" data-arg="${SEASON_BASE + n}" style="--dc:${WORLDS[k].top === '#ffffff' ? '#7b8fb0' : WORLDS[k].top}">
+      <span class="dk">&#128682;</span><span><b>Secret ${SEASON_NAMES[k]} door</b><small>${d.done ? 'Found it! Play again' : k === now ? 'Something new appeared!' : 'Kept in your library'}</small></span></button>`; }).join('')}</div>`;
+}
 function showMap() {
   mode = 'menu'; L = null; SND.play(menuSong());
   const medals = stickerCount();
@@ -2447,6 +2617,7 @@ function showMap() {
         ${!locked && save.medals[i] !== undefined ? `<span class="tm" title="Best skill level cleared">${TIERS.map((t, k) => `<i style="--tc:${t.col}" class="${k <= save.medals[i] ? 'on' : ''}"></i>`).join('')}</span>` : ''}
         ${locked ? '<span class="lock">Locked</span>' : ''}
       </button>`; }).join('')}</div>
+    ${seasonDoors()}
     <div class="king"><img src="${SPR.king}" alt="King Doodlebeard"><p class="say"><b>King Doodlebeard:</b> ${medals ? `Splendid work, ${esc(save.name || 'hero')}! You have earned ${medals} of ${STICKERS.length} royal stickers.` : `Welcome, ${esc(save.name || 'hero')}! Rescue our friends and I shall award you royal stickers.`} ${medals < TWINKLE_AT ? `Earn ${TWINKLE_AT} stickers and little Twinkle will fly with you!` : 'Twinkle is flying with you and grabbing crayons.'} Skill level: <b>${TIERS[tierNo()].name}</b>. ${TIERS[tierNo()].blurb}</p></div>
     <div class="btns"><button class="b" data-go="title">Title</button><button class="b" data-go="settings">Settings</button><button class="b" data-go="juke" data-arg="map">Jukebox &#9835;</button><button class="b pink" data-go="stickers">Sticker book (${medals})</button><button class="b" data-go="heroes">Change hero</button></div>`, 'map-panel');
 }
@@ -2536,7 +2707,7 @@ function showEnding() {
 const GO = {
   title: showTitle, map: showMap, heroes: showHeroes, stickers: showStickers, settings: showSettings,
   start: () => { const nm = $('#nm'); if (nm) save.name = nm.value.trim().slice(0, 16); persist(); if (save.name) sayToPlayer("Let's play in the Crayon Kingdom!"); if (!save.heroPicked) showHeroes(); else showMap(); },
-  play: b => { const i = +b.dataset.arg; if (i <= save.unlocked) startLevel(i); },
+  play: b => { const i = +b.dataset.arg; if (i >= SEASON_BASE ? !!levelDef(i) : i <= save.unlocked) startLevel(i); },
   pickHero: b => { const k = b.dataset.arg; if (!heroUnlocked(k)) { SND.sfx('out'); return; } save.hero = k; save.heroPicked = true; persist(); scr.querySelectorAll('.hero').forEach(x => x.classList.toggle('sel', x.dataset.arg === k)); },
   resume, restart: () => { if (L) startLevel(L.idx); },
   pickTier: b => { const k = +b.dataset.arg; if (k > (save.tierMax || 0)) { SND.sfx('out'); toast('Locked', 'Beat Big Blotto on ' + TIERS[k - 1].name + ' to unlock ' + TIERS[k].name, 'inky'); return; } save.tier = k; persist(); SND.sfx('click'); showMap(); },
